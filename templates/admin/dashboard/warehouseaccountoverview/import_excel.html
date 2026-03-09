@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:dashboard_warehouseaccountoverview_changelist' %}">Warehouse and Account Overview</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p>ارفع ملف Excel (مثل <strong>Warehouse.xlsx</strong>) يحتوي على شيت <strong>Da-tamer</strong> (بيانات الجدول) واختياريًا شيت <strong>Capacity-volume</strong> (لشارت السعة). إذا لم تحدد اسم شيت، سيُستورد تلقائيًا شيت Da-tamer إن وُجد وإلا Sheet1. سيتم استبدال كل البيانات الحالية.</p>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="form-row">
+    <label for="id_sheet_name">اسم شيت الجدول (اختياري، افتراضي Da-tamer أو Sheet1):</label>
+    <input type="text" name="sheet_name" id="id_sheet_name" value="" placeholder="اتركه فارغًا للاكتشاف التلقائي" maxlength="100" style="width: 280px;">
+  </div>
+  <div class="form-row" style="margin-top: 12px;">
+    <label for="id_excel_file">ملف Excel:</label>
+    <input type="file" name="excel_file" id="id_excel_file" accept=".xlsx,.xls" required>
+  </div>
+  <div class="submit-row" style="margin-top: 16px;">
+    <input type="submit" value="استيراد" class="default">
+    <a href="{% url 'admin:dashboard_warehouseaccountoverview_changelist' %}" class="button default">إلغاء</a>
+  </div>
+</form>
+{% endblock %}

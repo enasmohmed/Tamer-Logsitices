@@ -1,0 +1,424 @@
+{% load static %}
+<style>
+  .warehouse-theme-card {
+    background: #fff !important;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .warehouse-theme-card:hover {
+    background: rgba(116, 188, 255, 0.12) !important;
+    border-color: #74bcff;
+    box-shadow: 0 6px 20px rgba(116, 188, 255, 0.25);
+  }
+  .warehouse-theme-card .card-body {
+    padding: 1.1rem 1.25rem;
+  }
+  .warehouse-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1a5f7a;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .warehouse-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+  }
+  .warehouse-card .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(116, 188, 255, 0.2) !important;
+    color: #1a5f7a;
+  }
+  .warehouse-theme-card:hover .card-icon {
+    background: rgba(116, 188, 255, 0.35) !important;
+    color: #0d3d4d;
+  }
+  .warehouse-card .card-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a5f7a;
+  }
+  .warehouse-table-wrap {
+    max-height: 420px;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 8px 8px;
+  }
+  .warehouse-table-wrap .table {
+    margin-bottom: 0;
+  }
+  .warehouse-table-wrap .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #74bcff !important;
+    color: #fff;
+    white-space: nowrap;
+    border-color: var(--site-soft, #9ddef6);
+    box-shadow: 0 2px 0 var(--site-soft, #9ddef6);
+  }
+  .warehouse-table-wrap .table td {
+    vertical-align: middle;
+    border-color: var(--site-gray, #cccccc);
+  }
+  .warehouse-table-wrap .table td.warehouse-cell {
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .warehouse-table-wrap .table tbody tr.warehouse-row-light {
+    background-color: #eeeeee;
+  }
+  .warehouse-table-wrap .table tbody tr.warehouse-row-light td.warehouse-cell {
+    background-color: #eeeeee;
+  }
+  .warehouse-table-wrap .table tbody tr.warehouse-row-white {
+    background-color: #fff;
+  }
+  .warehouse-table-wrap .table tbody tr.warehouse-row-white td.warehouse-cell {
+    background-color: #fff;
+  }
+  .warehouse-account-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .warehouse-account-badge-gray {
+    background-color: #e9ecef;
+    color: #495057;
+  }
+  .warehouse-account-badge-pink {
+    background-color: var(--site-pink, #ffe2df);
+    color: #8b5a54;
+  }
+</style>
+<div class="warehouse-overview-tab">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
+    <h4 class="mb-0">Warehouse and Account Overview</h4>
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-2">
+        <label for="warehouse-wh-filter" class="form-label mb-0 fw-semibold" style="color: #1a5f7a;">WHs</label>
+        <select id="warehouse-wh-filter" class="form-select form-select-sm" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+          <option value="">All</option>
+          {% for w in all_warehouse_names %}
+          <option value="{{ w }}" {% if selected_warehouse == w %}selected{% endif %}>{{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label for="warehouse-day-filter" class="form-label mb-0 fw-semibold" style="color: #1a5f7a;">Day</label>
+        <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 140px; border-color: var(--site-accent, #74bcff);">
+          <option value="">All</option>
+          <option value="today" {% if selected_day == "today" %}selected{% endif %}>{{ "Today" }}</option>
+          <option value="yesterday" {% if selected_day == "yesterday" %}selected{% endif %}>{{ "Yesterday" }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ٥ كروت: خلفية بيضاء، عنوان أعلى الكارت، أيقونة مناسبة، hover #74bcff -->
+  <div class="row g-3 mb-4">
+    <div class="col">
+      <div class="card h-100 warehouse-theme-card">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total Inbound</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <img src="https://cdn-icons-png.flaticon.com/128/17865/17865314.png" alt="Delivery truck" style="width:30px; height:30px; object-fit:contain;" />
+            </div>
+            <span class="card-value">{{ totals.total_inbound|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100 warehouse-theme-card">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total Outbound</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <img src="https://cdn-icons-png.flaticon.com/128/17865/17865314.png" alt="Delivery truck" style="width:30px; height:30px; object-fit:contain;" />
+            </div>
+            <span class="card-value">{{ totals.total_outbound|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100 warehouse-theme-card">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total Clearance</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
+            </div>
+            <span class="card-value">{{ totals.total_clearance|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100 warehouse-theme-card">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total Occupied Location</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+            </div>
+            <span class="card-value">{{ totals.total_occupied_location|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card h-100 warehouse-theme-card">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total Transportation</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3.5A.5.5 0 0 1 .5 3H15a1 1 0 0 1 1 1v1.5H.5V3z"/><path d="M0 6.5V15a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V6.5H0zM2 8a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V8zm4 0a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5V8zm4-3.5A.5.5 0 0 1 11 4h2a.5.5 0 0 1 .5.5V6h-3V4.5z"/></svg>
+            </div>
+            <span class="card-value">{{ totals.total_transportation|default:0 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- شارت Operations by Warehouse -->
+  <div class="card shadow-sm mb-4" style="border-color: var(--site-soft, #9ddef6);">
+    <div class="card-header" style="background: var(--site-bg-2, #a2eaff); color: #1a5f7a;">
+      <strong>Operations by Warehouse</strong>
+    </div>
+    <div class="card-body">
+      <canvas id="warehouse-overview-chart" height="280"></canvas>
+    </div>
+  </div>
+
+  <!-- شارت Capacity Used vs Available (أفقي، شريط واحد مقسّم Used + Available) -->
+  <div class="card shadow-sm mb-4" style="border-color: var(--site-soft, #9ddef6);">
+    <div class="card-header" style="background: var(--site-bg-2, #a2eaff); color: #1a5f7a;">
+      <strong>Capacity Used vs Available</strong>
+    </div>
+    <div class="card-body">
+      <canvas id="capacity-used-vs-available-chart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- جدول البيانات: فلتران Warehouse + Account ثم جدول -->
+  <div class="card shadow-sm" style="border-color: var(--site-soft, #9ddef6);">
+    <div class="card-header d-flex align-items-center" style="background: var(--site-bg-2, #a2eaff); color: #1a5f7a;">
+      <strong>Data by Warehouse & Account</strong>
+    </div>
+    <div class="px-3 pt-3 pb-2 border-bottom" style="background: #fafafa; border-color: var(--site-gray, #cccccc) !important;">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <label for="filter-warehouse" class="form-label mb-0 me-2 fw-semibold" style="color: #1a5f7a;">Warehouse</label>
+          <select id="filter-warehouse" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+            <option value="">All</option>
+            {% for w in warehouse_names %}
+            <option value="{{ w }}">{{ w }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-auto">
+          <label for="filter-account" class="form-label mb-0 me-2 fw-semibold" style="color: #1a5f7a;">Account</label>
+          <select id="filter-account" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+            <option value="">All</option>
+            {% for a in account_names %}
+            <option value="{{ a }}">{{ a }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="warehouse-table-wrap">
+      <table class="table table-bordered table-hover text-center align-middle mb-0" id="warehouse-data-table">
+        <thead>
+          <tr>
+            <th>Warehouse</th>
+            <th>Account</th>
+            <th>Inbound</th>
+            <th>Outbound</th>
+            <th>Clearance</th>
+            <th>Occupied Location</th>
+            <th>Transportation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in table_rows %}
+          <tr class="warehouse-row-{{ row.row_bg|default:'white' }} warehouse-data-row" data-warehouse="{{ row.warehouse|default:'' }}" data-account="{{ row.account|default:'' }}">
+            {% if row.warehouse_rowspan %}
+            <td class="warehouse-cell" rowspan="{{ row.warehouse_rowspan }}">{{ row.warehouse_value }}</td>
+            {% endif %}
+            <td><span class="warehouse-account-badge warehouse-account-badge-{{ row.account_badge|default:'gray' }}">{{ row.account }}</span></td>
+            <td>{{ row.inbound }}</td>
+            <td>{{ row.outbound }}</td>
+            <td>{{ row.clearance }}</td>
+            <td>{{ row.occupied_location }}</td>
+            <td>{{ row.transportation }}</td>
+          </tr>
+          {% empty %}
+          <tr class="warehouse-empty-row">
+            <td colspan="7" class="text-muted py-4">No data. Upload Excel from Admin (Warehouse and Account Overview → استيراد من Excel).</td>
+          </tr>
+          {% endfor %}
+          {% if table_rows %}
+          <tr id="warehouse-no-match-row" style="display: none;">
+            <td colspan="7" class="text-muted py-4">No matching rows for the selected filters.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var chartData = {{ chart_data_json|safe }};
+  if (!chartData || !chartData.length) return;
+  var ctx = document.getElementById("warehouse-overview-chart");
+  if (!ctx) return;
+  var rawLabels = chartData[0] && chartData[0].dataPoints ? chartData[0].dataPoints.map(function(d) { return d.label; }) : [];
+  var labels = rawLabels.map(function(str) {
+    var parts = (str || "").trim().split(/\s+/);
+    if (parts.length <= 1) return str || "";
+    return parts[0] + "\n" + parts.slice(1).join(" ");
+  });
+  var barColors = ["#ffe2df", "#cccccc"];
+  var datasets = chartData.map(function(kpi, idx) {
+    var values = (kpi.dataPoints || []).map(function(d) { return d.y; });
+    return {
+      label: kpi.name,
+      data: values,
+      backgroundColor: barColors[idx % barColors.length],
+      borderRadius: 6
+    };
+  });
+  if (typeof Chart !== "undefined") {
+    var totals = datasets.map(function(d) {
+      return d.data.reduce(function(a, b) { return a + (b || 0); }, 0);
+    });
+    var pluginPctAboveBar = {
+      id: "pctAboveBar",
+      afterDatasetsDraw: function(chart) {
+        var ctx = chart.ctx;
+        chart.data.datasets.forEach(function(dataset, i) {
+          var meta = chart.getDatasetMeta(i);
+          if (!meta.hidden) {
+            var total = totals[i] || 1;
+            meta.data.forEach(function(bar, j) {
+              var val = dataset.data[j];
+              if (val == null) return;
+              var pctVal = total > 0 ? Math.round((val / total) * 100) : 0;
+              ctx.save();
+              ctx.textAlign = "center";
+              ctx.textBaseline = "bottom";
+              ctx.font = "normal 12px sans-serif";
+              ctx.fillStyle = "#1a5f7a";
+              var x = bar.x;
+              var y = bar.y - 4;
+              ctx.fillText(pctVal + "%", x, y);
+              ctx.restore();
+            });
+          }
+        });
+      }
+    };
+    if (typeof Chart.defaults !== "undefined") {
+      Chart.defaults.font = Chart.defaults.font || {};
+      Chart.defaults.font.style = "normal";
+    }
+    new Chart(ctx.getContext("2d"), {
+      type: "bar",
+      data: { labels: labels, datasets: datasets },
+      plugins: [pluginPctAboveBar],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "top" } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { font: { style: "normal" } }
+          },
+          x: {
+            stacked: false,
+            ticks: { font: { style: "normal" } }
+          }
+        }
+      }
+    });
+  }
+})();
+
+(function() {
+  var usedPct = {{ capacity_chart.used_pct|default:0 }};
+  var availablePct = {{ capacity_chart.available_pct|default:100 }};
+  var ctx = document.getElementById("capacity-used-vs-available-chart");
+  if (!ctx || typeof Chart === "undefined") return;
+  new Chart(ctx.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: [""],
+      datasets: [
+        { label: "Used", data: [usedPct], backgroundColor: "#66B2B2", borderRadius: 4 },
+        { label: "Available: " + availablePct + "%", data: [availablePct], backgroundColor: "#B2E0E0", borderRadius: 4 }
+      ]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom" } },
+      scales: {
+        x: { max: 100, stacked: true, ticks: { callback: function(v) { return v + "%"; } } },
+        y: { stacked: true, display: false }
+      }
+    }
+  });
+})();
+
+(function() {
+  function applyWarehouseTableFilters() {
+    var wh = (document.getElementById("filter-warehouse") || {}).value || "";
+    var acc = (document.getElementById("filter-account") || {}).value || "";
+    var rows = document.querySelectorAll("#warehouse-data-table tbody tr.warehouse-data-row");
+    var visible = 0;
+    rows.forEach(function(tr) {
+      var rWh = (tr.getAttribute("data-warehouse") || "").trim();
+      var rAcc = (tr.getAttribute("data-account") || "").trim();
+      var matchWh = !wh || rWh === wh;
+      var matchAcc = !acc || rAcc === acc;
+      if (matchWh && matchAcc) {
+        tr.style.display = "";
+        visible++;
+      } else {
+        tr.style.display = "none";
+      }
+    });
+    var emptyRow = document.querySelector("#warehouse-data-table tbody tr.warehouse-empty-row");
+    if (emptyRow) emptyRow.style.display = visible ? "none" : "";
+    var noMatchRow = document.getElementById("warehouse-no-match-row");
+    if (noMatchRow) noMatchRow.style.display = (rows.length > 0 && visible === 0) ? "" : "none";
+  }
+  var fw = document.getElementById("filter-warehouse");
+  var fa = document.getElementById("filter-account");
+  if (fw) fw.addEventListener("change", applyWarehouseTableFilters);
+  if (fa) fa.addEventListener("change", applyWarehouseTableFilters);
+})();
+</script>
