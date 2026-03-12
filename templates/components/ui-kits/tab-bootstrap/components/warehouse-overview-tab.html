@@ -1,16 +1,17 @@
 {% load static %}
 <style>
+  /* باليت الصورة — درجات أزرق */
   .warehouse-theme-card {
-    background: #fff !important;
+    background: #FFFFFF !important;
     border-radius: 12px;
-    border: 1px solid #e9ecef;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
   .warehouse-theme-card:hover {
-    background: rgba(116, 188, 255, 0.12) !important;
-    border-color: #74bcff;
-    box-shadow: 0 6px 20px rgba(116, 188, 255, 0.25);
+    background: #EAF2FB !important;
+    border-color: #4A90E2;
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.15);
   }
   .warehouse-theme-card .card-body {
     padding: 1.1rem 1.25rem;
@@ -18,7 +19,7 @@
   .warehouse-card-title {
     font-size: 1.15rem;
     font-weight: 700;
-    color: #1a5f7a;
+    color: #1E293B;
     margin-bottom: 0.75rem;
     letter-spacing: 0.01em;
     line-height: 1.3;
@@ -38,22 +39,22 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: rgba(116, 188, 255, 0.2) !important;
-    color: #1a5f7a;
+    background: #CFE1F7 !important;
+    color: #3A7BD5;
   }
   .warehouse-theme-card:hover .card-icon {
-    background: rgba(116, 188, 255, 0.35) !important;
-    color: #0d3d4d;
+    background: #A9C9F0 !important;
+    color: #fff;
   }
   .warehouse-card .card-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1a5f7a;
+    color: #fff;
   }
   .warehouse-table-wrap {
-    max-height: 420px;
+    max-height: 520px;
     overflow: auto;
-    border: 1px solid #dee2e6;
+    border: 1px solid #E2E8F0;
     border-radius: 0 0 8px 8px;
   }
   .warehouse-table-wrap .table {
@@ -63,15 +64,15 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: #74bcff !important;
+    background: #4A90E2 !important;
     color: #fff;
     white-space: nowrap;
-    border-color: var(--site-soft, #9ddef6);
-    box-shadow: 0 2px 0 var(--site-soft, #9ddef6);
+    border-color: #E2E8F0;
+    box-shadow: 0 2px 0 #E2E8F0;
   }
   .warehouse-table-wrap .table td {
     vertical-align: middle;
-    border-color: var(--site-gray, #cccccc);
+    border-color: #E2E8F0;
   }
   .warehouse-table-wrap .table td.warehouse-cell,
   .warehouse-table-wrap .table td.capacity-cell {
@@ -79,11 +80,11 @@
     vertical-align: middle;
   }
   .warehouse-table-wrap .table tbody tr.warehouse-row-light {
-    background-color: #eeeeee;
+    background-color: #EAF2FB;
   }
   .warehouse-table-wrap .table tbody tr.warehouse-row-light td.warehouse-cell,
   .warehouse-table-wrap .table tbody tr.warehouse-row-light td.capacity-cell {
-    background-color: #eeeeee;
+    background-color: #EAF2FB;
   }
   .warehouse-table-wrap .table tbody tr.warehouse-row-white {
     background-color: #fff;
@@ -93,7 +94,7 @@
     background-color: #fff;
   }
   .warehouse-table-wrap .table .warehouse-no-data {
-    color: #6c757d;
+    color: #94A3B8;
     font-style: italic;
   }
   .warehouse-account-badge {
@@ -104,41 +105,66 @@
     font-size: 0.9rem;
   }
   .warehouse-account-badge-gray {
-    background-color: #e9ecef;
-    color: #495057;
+    background-color: #E2E8F0;
+    color: #475569;
   }
   .warehouse-account-badge-pink {
-    background-color: var(--site-pink, #ffe2df);
-    color: #8b5a54;
+    background-color: #CFE1F7;
+    color: #2F6EC2;
   }
   .warehouse-kpi-card {
     cursor: pointer;
   }
   .warehouse-kpi-card .card-high-low {
     font-size: 0.8rem;
-    color: #495057;
+    color: #475569;
     margin-top: 0.5rem;
     line-height: 1.4;
   }
-  .warehouse-kpi-card .card-high-low strong { color: #1a5f7a; }
-  /* High/Low business block: hidden by default, only visible when hovering over the card */
+  .warehouse-kpi-card .card-high-low strong { color: #1E293B; }
   .warehouse-kpi-card .card-high-low-hover {
     display: none !important;
     margin-top: 0.5rem;
     font-size: 0.85rem;
-    color: #495057;
+    color: #fff;
     line-height: 1.4;
   }
   .warehouse-kpi-card:hover .card-high-low-hover {
     display: flex !important;
   }
   #warehouse-data-table tbody tr.warehouse-row-highlight td {
-    background-color: rgba(116, 188, 255, 0.4) !important;
+    background-color: rgba(74, 144, 226, 0.2) !important;
   }
-  .wh-capacity-card.wh-util-green .wh-util-count { color: rgba(75, 192, 192, 0.95); }
-  .wh-capacity-card.wh-util-orange .wh-util-count { color: rgba(255, 159, 64, 0.95); }
+  .wh-capacity-card .wh-util-count { color: #2F6EC2; }
   #warehouse-data-table tbody tr.warehouse-row-highlight td.warehouse-cell {
-    background-color: rgba(116, 188, 255, 0.5) !important;
+    background-color: rgba(74, 144, 226, 0.25) !important;
+  }
+  /* شريط التقدم لعمود Utilization % */
+  .warehouse-util-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .warehouse-util-progress {
+    height: 1.25rem;
+    width: 80px;
+    min-width: 80px;
+    background-color: #E5E7EB;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .warehouse-util-progress .warehouse-util-bar {
+    height: 100%;
+    min-width: 0;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+  }
+  .warehouse-util-pct-text {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #2F6EC2;
+    min-width: 2.5em;
   }
 </style>
 <div class="warehouse-overview-tab">
@@ -146,8 +172,8 @@
     <h4 class="mb-0">Warehouse and Account Overview</h4>
     <div class="d-flex align-items-center gap-3 flex-wrap">
       <div class="d-flex align-items-center gap-2">
-        <label for="warehouse-wh-filter" class="form-label mb-0 fw-semibold" style="color: #1a5f7a;">WHs</label>
-        <select id="warehouse-wh-filter" class="form-select form-select-sm" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+        <label for="warehouse-wh-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">WHs</label>
+        <select id="warehouse-wh-filter" class="form-select form-select-sm" style="min-width: 180px; border-color: #4A90E2;">
           <option value="">All</option>
           {% for w in all_warehouse_names %}
           <option value="{{ w }}" {% if selected_warehouse == w %}selected{% endif %}>{{ w }}</option>
@@ -155,8 +181,8 @@
         </select>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <label for="warehouse-day-filter" class="form-label mb-0 fw-semibold" style="color: #1a5f7a;">Day</label>
-        <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 140px; border-color: var(--site-accent, #74bcff);">
+        <label for="warehouse-day-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">Day</label>
+        <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 140px; border-color: #4A90E2;">
           <option value="">All</option>
           <option value="today" {% if selected_day == "today" %}selected{% endif %}>
             Today ({{ today_date|date:"Y-m-d" }})
@@ -178,7 +204,7 @@
   <!-- ٤ كروت: Clearance، Inbound، Outbound، Transportation — Highest/Lowest Warehouse – Account مع الأعداد، الضغط يحدد صفوف المستودع والحساب -->
   <div class="row g-3 mb-4" id="warehouse-kpi-cards-row">
     <div class="col">
-      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="clearance">
+      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="clearance" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Clearance</h6>
           <div class="warehouse-card">
@@ -188,13 +214,13 @@
             <span class="card-value">{% if totals.total_clearance %}{{ totals.total_clearance }}{% else %}No Data{% endif %}</span>
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> 
+            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="high" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.high_warehouse|default:"-" }} ({{ card_high_low.clearance.high_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="high" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.high_account|default:"-" }} ({{ card_high_low.clearance.high_account_value|default:0 }})</a>
             </div>
             <div>
-              <strong>Lowest Warehouse – Account:</strong> 
+              <strong>Lowest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="low" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="low" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})</a>
@@ -204,7 +230,7 @@
       </div>
     </div>
     <div class="col">
-      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="inbound">
+      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="inbound" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Inbound</h6>
           <div class="warehouse-card">
@@ -214,13 +240,13 @@
             <span class="card-value">{% if totals.total_inbound %}{{ totals.total_inbound }}{% else %}No Data{% endif %}</span>
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> 
+            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="high" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.high_warehouse|default:"-" }} ({{ card_high_low.inbound.high_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="high" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.high_account|default:"-" }} ({{ card_high_low.inbound.high_account_value|default:0 }})</a>
             </div>
             <div>
-              <strong>Lowest Warehouse – Account:</strong> 
+              <strong>Lowest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="low" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="low" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})</a>
@@ -230,7 +256,7 @@
       </div>
     </div>
     <div class="col">
-      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="outbound">
+      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="outbound" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Outbound</h6>
           <div class="warehouse-card">
@@ -240,13 +266,13 @@
             <span class="card-value">{% if totals.total_outbound %}{{ totals.total_outbound }}{% else %}No Data{% endif %}</span>
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> 
+            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="high" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.high_warehouse|default:"-" }} ({{ card_high_low.outbound.high_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="high" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.high_account|default:"-" }} ({{ card_high_low.outbound.high_account_value|default:0 }})</a>
             </div>
             <div>
-              <strong>Lowest Warehouse – Account:</strong> 
+              <strong>Lowest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="low" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="low" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})</a>
@@ -256,7 +282,7 @@
       </div>
     </div>
     <div class="col">
-      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="transportation">
+      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="transportation" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Transportation</h6>
           <div class="warehouse-card">
@@ -266,13 +292,13 @@
             <span class="card-value">{% if totals.total_transportation %}{{ totals.total_transportation }}{% else %}No Data{% endif %}</span>
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> 
+            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="high" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.high_warehouse|default:"-" }} ({{ card_high_low.transportation.high_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="high" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.high_account|default:"-" }} ({{ card_high_low.transportation.high_account_value|default:0 }})</a>
             </div>
             <div>
-              <strong>Lowest Warehouse – Account:</strong> 
+              <strong>Lowest Warehouse – Account:</strong> <br>
               <a href="#" class="js-select-warehouse" data-type="low" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})</a>
                – 
               <a href="#" class="js-select-account" data-type="low" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})</a>
@@ -345,29 +371,29 @@
   <style>
     .warehouse-kpi-card .card-high-low-hover a.js-select-warehouse:hover,
     .warehouse-kpi-card .card-high-low-hover a.js-select-account:hover {
-      color: #0073e6 !important;
+      color: #4A90E2 !important;
       text-decoration: underline;
       cursor: pointer;
     }
-    /* تمييز صفوف المستودع المختار: خلفية بيضاء ونص أسود بارز */
+    /* تمييز صفوف المستودع المختار */
     #warehouse-data-table tbody tr.warehouse-row-special-highlight td,
     #warehouse-data-table tbody tr.warehouse-row-special-highlight td.warehouse-cell {
       background-color: #fff !important;
-      color: #000 !important;
+      color: #1E293B !important;
       font-weight: bold;
-      border: 2px solid #0073e6 !important;
+      border: 2px solid #4A90E2 !important;
       box-shadow: 0 2px 12px rgba(0,0,0,0.03);
       transition: background 0.12s, color 0.12s, border 0.12s;
       z-index: 2;
       position: relative;
     }
-    /* تمييز صفوف الحساب المختار: خلفية بيضاء ونص أزرق بارز */
+    /* تمييز صفوف الحساب المختار */
     #warehouse-data-table tbody tr.account-row-special-highlight td,
     #warehouse-data-table tbody tr.account-row-special-highlight td.warehouse-cell {
       background-color: #fff !important;
-      color: #0d6efd !important;
+      color: #2F6EC2 !important;
       font-weight: bold;
-      border: 2px solid #0d6efd !important;
+      border: 2px solid #2F6EC2 !important;
       box-shadow: 0 2px 12px rgba(0,0,0,0.03);
       transition: background 0.12s, color 0.12s, border 0.12s;
       z-index: 2;
@@ -377,32 +403,32 @@
 
   <!-- Capacity and Utilization: كارد لكل مستودع — Utilization % + Highest/Lowest Account -->
   <div class="mb-4" id="warehouse-capacity-util-section">
-    <h4 class="mb-3" style="color: #164863; font-weight: 800; letter-spacing: 1px;">Capacity and Utilization</h4>
+    <h4 class="mb-3" style="color: #1E293B; font-weight: 800; letter-spacing: 1px;">Capacity and Utilization</h4>
     <div class="row g-4" id="warehouse-capacity-cards-row">
       {% for card in warehouse_capacity_cards %}
       <div class="col-12 col-sm-6 col-lg-3 d-flex">
-        <div class="card h-100 w-100 warehouse-theme-card wh-capacity-card shadow-sm border-0 wh-util-{% if card.utilization_pct >= 50 %}orange{% else %}green{% endif %}" style="border-radius: 18px; background: #ffffff; transition: box-shadow 0.2s;">
+        <div class="card h-100 w-100 warehouse-theme-card wh-capacity-card shadow-sm border-0" style="border-radius: 18px; background: #FFFFFF; border: 1px solid #E2E8F0; transition: box-shadow 0.2s;">
           <div class="card-body d-flex flex-column align-items-center text-center px-3 py-4">
-            <h6 class="warehouse-card-title w-100 mb-3 text-uppercase fw-bold" style="font-size: 1.09rem; color: #164863; letter-spacing: 0.5px;">{{ card.warehouse }}</h6>
+            <h6 class="warehouse-card-title w-100 mb-3 text-uppercase fw-bold" style="font-size: 1.09rem; color: #1E293B; letter-spacing: 0.5px;">{{ card.warehouse }}</h6>
             <div class="position-relative mb-3" style="width: 132px; height: 132px;">
               <canvas id="wh-util-{{ forloop.counter0 }}" width="132" height="132" style="max-width: 132px; max-height: 132px;"></canvas>
               <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center justify-content-center" style="pointer-events: none;">
-                <span class="wh-util-pct fw-bold" style="font-size: 1rem; color: #1a5f7a;" data-pct="{{ card.utilization_pct }}">{{ card.utilization_pct }}%</span>
-                <small class="text-muted" style="font-size: 0.8rem;">Utilization</small>
+                <span class="wh-util-pct fw-bold" style="font-size: 1rem; color: #2F6EC2;" data-pct="{{ card.utilization_pct }}">{{ card.utilization_pct }}%</span>
+                <small class="text-muted" style="font-size: 0.8rem; color: #94A3B8;">Utilization</small>
               </div>
             </div>
             <div class="w-100 text-start px-1">
-              <hr style="margin: 0.7rem 0 0.9rem 0; border-top: 1.5px dashed #71afcf; opacity: 0.5;">
+              <hr style="margin: 0.7rem 0 0.9rem 0; border-top: 1.5px dashed #E2E8F0; opacity: 0.8;">
               <div class="warehouse-capacity-high-low d-flex justify-content-between align-items-end gap-2">
                 <div class="flex-grow-1">
-                  <span class="text-muted small">Highest Account</span>
-                  <div class="fw-semibold" style="color: #1a5f7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.highest_account_name }}</div>
-                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #15559c;">{{ card.highest_account_count }}</span>
+                  <span class="text-muted small" style="color: #2F6EC2 !important;">Highest Account</span>
+                  <div class="fw-semibold" style="color: #1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.highest_account_name }}</div>
+                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #2F6EC2;">{{ card.highest_account_count }}</span>
                 </div>
                 <div class="flex-grow-1">
-                  <span class="text-muted small">Lowest Account</span>
-                  <div class="fw-semibold" style="color: #1a5f7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.lowest_account_name }}</div>
-                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #bb411d;">{{ card.lowest_account_count }}</span>
+                  <span class="text-muted small" style="color: #327450 !important;">Lowest Account</span>
+                  <div class="fw-semibold" style="color: #1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.lowest_account_name }}</div>
+                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #2F6EC2;">{{ card.lowest_account_count }}</span>
                 </div>
               </div>
             </div>
@@ -432,7 +458,7 @@
           if (pctSpan) pct = parseFloat(pctSpan.getAttribute('data-pct')) || 0;
         }
         var rest = Math.max(0, 100 - pct);
-        var color = pct >= 50 ? 'rgba(255, 159, 64, 0.9)' : 'rgba(75, 192, 192, 0.9)';
+        var color = pct >= 75 ? '#2F6EC2' : pct >= 50 ? '#4A90E2' : pct >= 25 ? '#A9C9F0' : '#CFE1F7';
         var ctx = canvas.getContext('2d');
         if (!ctx) return;
         if (window._whUtilCharts[idx]) {
@@ -445,7 +471,7 @@
             labels: ['Utilization', 'Remaining'],
             datasets: [{
               data: [pct, rest],
-              backgroundColor: [color, 'rgba(0,0,0,0.06)'],
+              backgroundColor: [color, '#E5E7EB'],
               borderWidth: 0
             }]
           },
@@ -462,15 +488,15 @@
   </script>
 
   <!-- جدول البيانات: فلتران Warehouse + Account ثم جدول -->
-  <div class="card shadow-sm" id="warehouse-data-table-section" style="border-color: var(--site-soft, #9ddef6);">
-    <div class="card-header d-flex align-items-center" style="background: #ffffff; color: #1a5f7a;">
+  <div class="card shadow-sm" id="warehouse-data-table-section" style="border: 1px solid #E2E8F0;">
+    <div class="card-header d-flex align-items-center" style="background: #CFE1F7; color: #1E293B;">
       <strong>Data by Warehouse & Account</strong>
     </div>
-    <div class="px-3 pt-3 pb-2 border-bottom" style="background: #fafafa; border-color: var(--site-gray, #cccccc) !important;">
+    <div class="px-3 pt-3 pb-2 border-bottom" style="background: #eaf2fb45; border-color: #E2E8F0 !important;">
       <div class="row g-2 align-items-center">
         <div class="col-auto">
-          <label for="filter-warehouse" class="form-label mb-0 me-2 fw-semibold" style="color: #1a5f7a;">Warehouse</label>
-          <select id="filter-warehouse" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+          <label for="filter-warehouse" class="form-label mb-0 me-2 fw-semibold" style="color: #1E293B;">Warehouse</label>
+          <select id="filter-warehouse" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: #4A90E2;">
             <option value="">All</option>
             {% for w in warehouse_names %}
             <option value="{{ w }}">{{ w }}</option>
@@ -478,8 +504,8 @@
           </select>
         </div>
         <div class="col-auto">
-          <label for="filter-account" class="form-label mb-0 me-2 fw-semibold" style="color: #1a5f7a;">Account</label>
-          <select id="filter-account" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: var(--site-accent, #74bcff);">
+          <label for="filter-account" class="form-label mb-0 me-2 fw-semibold" style="color: #1E293B;">Account</label>
+          <select id="filter-account" class="form-select form-select-sm warehouse-table-filter" style="min-width: 180px; border-color: #4A90E2;">
             <option value="">All</option>
             {% for a in account_names %}
             <option value="{{ a }}">{{ a }}</option>
@@ -518,7 +544,18 @@
             <td>{% if row.outbound %}{{ row.outbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
             <td>{% if row.transportation %}{{ row.transportation }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
             <td>{% if row.occupied_location %}{{ row.occupied_location }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.utilization_pct is not None and row.utilization_pct %}{{ row.utilization_pct }}%{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td class="align-middle">
+              {% if row.utilization_pct is not None and row.utilization_pct != '' %}
+              <div class="warehouse-util-cell">
+                <div class="warehouse-util-progress">
+                  <div class="warehouse-util-bar" style="width: {% if row.utilization_pct > 100 %}100{% else %}{{ row.utilization_pct|floatformat:0 }}{% endif %}%; background-color: {% if row.utilization_pct >= 75 %}#2F6EC2{% elif row.utilization_pct >= 50 %}#4A90E2{% elif row.utilization_pct >= 25 %}#A9C9F0{% else %}#CFE1F7{% endif %};"></div>
+                </div>
+                <span class="warehouse-util-pct-text">{{ row.utilization_pct }}%</span>
+              </div>
+              {% else %}
+              <span class="warehouse-no-data">No Data</span>
+              {% endif %}
+            </td>
           </tr>
           {% empty %}
           <tr class="warehouse-empty-row">

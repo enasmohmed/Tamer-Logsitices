@@ -1,62 +1,67 @@
 {% load static %} {% load sass_tags %} {% csrf_token %}
 <style>
   .nav-tabs .nav-link {
-    background-color: var(--site-bg-2, #a2eaff);
-    color: #1a5f7a;
+    background-color: var(--site-bg-2, #CFE1F7);
+    color: #1E293B;
     border: none;
     transition: all 0.2s ease-in-out;
   }
   .nav-tabs .nav-link:hover {
-    background-color: var(--site-bg-3, #9be3ff);
+    background-color: var(--site-bg-3, #A9C9F0);
   }
   .nav-tabs .nav-link.active {
-    background: var(--site-accent, #74bcff) !important;
+    background: var(--site-accent, #4A90E2) !important;
     color: #fff !important;
   }
 
   /* تنسيق التابات بألوان مريحة */
   #dashboard-tabs {
     display: flex;
-    justify-content: center;
+    /* justify-content: center; */
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
+    margin-top: 80px;
   }
 
   #dashboard-tabs button {
-    background: var(--site-bg-2, #a2eaff);
-    color: #1a5f7a;
-    border: 1px solid var(--site-soft, #9ddef6);
+    background: var(--site-bg-2, #CFE1F7);
+    color: #1E293B;
+    border: 1px solid #E2E8F0;
     border-radius: 10px;
     padding: 10px 20px;
     font-weight: 600;
     font-size: 15px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(116, 188, 255, 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
   #dashboard-tabs button:hover {
-    background: var(--site-bg-3, #9be3ff);
-    color: #0d3d4d;
+    background: var(--site-bg-3, #A9C9F0);
+    color: #1E293B;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(116, 188, 255, 0.25);
+    box-shadow: 0 4px 8px rgba(74, 144, 226, 0.2);
   }
 
   #dashboard-tabs button.active {
-    background: var(--site-accent, #74bcff) !important;
+    background: var(--site-accent, #4A90E2) !important;
     color: #fff !important;
-    border-color: var(--site-accent, #74bcff) !important;
-    box-shadow: 0 3px 6px rgba(116, 188, 255, 0.35);
+    border-color: #4A90E2 !important;
+    box-shadow: 0 3px 6px rgba(74, 144, 226, 0.35);
     transform: scale(1.03);
     font-weight: bold;
   }
 
   .btn-download-excel {
-    background: var(--site-accent, #74bcff) !important;
+    background: #4A90E2 !important;
     color: #fff !important;
-    border-color: var(--site-accent, #74bcff) !important;
-    box-shadow: 0 3px 6px rgba(116, 188, 255, 0.25);
+    border-color: #4A90E2 !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
     font-weight: bold;
+  }
+  .btn-download-excel:hover {
+    background: #3A7BD5 !important;
+    border-color: #3A7BD5 !important;
   }
 
   /* 🩵 تابات أصغر على الموبايل */
@@ -77,10 +82,10 @@
   .custom-select {
     width: 100%;
     padding: 10px 14px;
-    border: 2px solid var(--site-accent, #74bcff);
+    border: 2px solid #4A90E2;
     border-radius: 10px;
     background-color: #fff;
-    color: #1a5f7a;
+    color: #1E293B;
     font-weight: 600;
     font-size: 15px;
     appearance: none;
@@ -93,7 +98,7 @@
   .custom-select-wrapper::after {
     content: "▼";
     font-size: 12px;
-    color: var(--site-accent, #74bcff);
+    color: #4A90E2;
     position: absolute;
     top: 50%;
     right: 12px;
@@ -103,14 +108,14 @@
   }
 
   .custom-select:hover {
-    border-color: var(--site-soft, #9ddef6);
-    box-shadow: 0 0 8px rgba(116, 188, 255, 0.25);
+    border-color: #A9C9F0;
+    box-shadow: 0 0 8px rgba(74, 144, 226, 0.2);
   }
 
   .custom-select:focus {
     outline: none;
-    border-color: var(--site-accent, #74bcff);
-    box-shadow: 0 0 10px rgba(116, 188, 255, 0.3);
+    border-color: #4A90E2;
+    box-shadow: 0 0 10px rgba(74, 144, 226, 0.25);
   }
 
   /* حركة السهم أثناء الفتح */
@@ -120,25 +125,25 @@
 
   /* زر رفع الملف */
   .upload-btn-small {
-    background: var(--site-soft, #9ddef6);
-    color: #1a5f7a;
+    background: #CFE1F7;
+    color: #1E293B;
     font-weight: 600;
     padding: 7px 16px;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 13.5px;
-    box-shadow: 0 2px 6px rgba(116, 188, 255, 0.2);
-    border: 1px solid var(--site-accent, #74bcff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #4A90E2;
     display: inline-flex;
     align-items: center;
   }
 
   .upload-btn-small:hover {
-    background: var(--site-accent, #74bcff);
+    background: #4A90E2;
     color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(116, 188, 255, 0.3);
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.25);
   }
 
   .upload-btn-small i {
@@ -147,9 +152,9 @@
 
   .custom-select {
     padding: 6px 10px;
-    border: 1.5px solid var(--site-accent, #74bcff);
+    border: 1.5px solid #4A90E2;
     border-radius: 6px;
-    color: #1a5f7a;
+    color: #1E293B;
     font-weight: 500;
     font-size: 14px;
     background-color: #fff;
@@ -159,11 +164,11 @@
 
   .custom-select:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(116, 188, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
   }
 
   .custom-select:hover {
-    border-color: var(--site-soft, #9ddef6);
+    border-color: #A9C9F0;
   }
 
   .custom-select-wrapper {
@@ -186,41 +191,41 @@
     gap: 1rem !important;
   }
 
-  /* خلفية البطاقة الرئيسية ومحتوى التاب — تطبيق على كل التابات */
+  /* خلفية البطاقة الرئيسية ومحتوى التاب */
   #tab-content.card {
-    background: linear-gradient(180deg, #fff 0%, var(--site-bg, #d1f0ff) 100%) !important;
-    border: 1px solid var(--site-soft, #9ddef6);
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   .container-fluid .card {
-    border-color: var(--site-soft, #9ddef6);
+    border-color: #E2E8F0;
     background-color: #fff;
   }
-  /* ألوان موحدة لمحتوى كل التابات (عند التبديل أو التحميل الديناميكي) */
   #tab-content .card-header:not([style*="background"]) {
-    background: var(--site-bg-2, #a2eaff) !important;
-    color: #1a5f7a;
-    border-color: var(--site-soft, #9ddef6);
+    background: #CFE1F7 !important;
+    color: #1E293B;
+    border-color: #E2E8F0;
   }
   #tab-content .table thead th {
-    background: var(--site-bg-2, #a2eaff) !important;
-    color: #1a5f7a;
-    border-color: var(--site-gray, #cccccc);
+    background: #4A90E2 !important;
+    color: #fff;
+    border-color: #E2E8F0;
   }
   #tab-content .table td, #tab-content .table th {
-    border-color: var(--site-gray, #cccccc);
+    border-color: #E2E8F0;
   }
   #tab-content .table-striped tbody tr:nth-of-type(odd) {
-    background-color: var(--site-bg, #d1f0ff);
+    background-color: #EAF2FB;
   }
   #tab-content .table-hover tbody tr:hover {
-    background-color: var(--site-pink, #ffe2df) !important;
+    background-color: #CFE1F7 !important;
   }
 </style>
 <!-- Container-fluid starts  -->
 <div class="container-fluid mt-5">
   <div class="row">
     <div class="col-md-12 mt-5">
-      <div class="card" style="background: #fff !important; border: 1px solid var(--site-soft, #9ddef6);">
+      <div class="card" style="background: #fff !important; border: 1px solid #E2E8F0;">
         <div
           class="card-header card-no-border pb-0"
           style="display: flex; align-items: center; gap: 12px"
@@ -305,123 +310,112 @@
             </div>
           </div>
           {% else %}
-          <!-- ✅ حالة وجود بيانات -->
-          <div
-            class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-4"
-          >
-            <!-- اختيار الشهر -->
-            <div class="d-flex align-items-center">
-              <div class="custom-select-wrapper">
-                <select id="month-select" class="custom-select">
-                  <option value="">-- All Months --</option>
-                  {% for m in months %}
-                  <option value="{{ m }}">{{ m }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <!-- فلتر الكوارتر -->
-
-              <!-- 
-              <div class="custom-select-wrapper">
-                <select id="quarter-select" class="custom-select">
-                  <option value="">-- All Quarters --</option>
-                  <option value="Q1-2025">Q1 - 2025 (Jan - Feb - Mar)</option>
-                  <option value="Q2-2025">Q2 - 2025 (Apr - May - Jun)</option>
-                  <option value="Q3-2025">Q3 - 2025 (Jul - Aug - Sep)</option>
-                  <option value="Q4-2025">Q4 - 2025 (Oct - Nov - Dec)</option>
-                </select>
-              </div>
-              -->
-              <button id="export-excel-btn" class="btn btn-download-excel ms-3">
-                📥 Download Excel
-              </button>
-<!--              <a href="?action=clear_excel" class="btn btn-outline-secondary ms-2" title="Clear data to see upload message again">-->
-<!--                🗑️ Clear Data-->
-<!--              </a>-->
-            </div>
-            <!-- زر رفع الملف -->
-            <button id="uploadBtn" class="upload-btn-small mb-0">
-              Upload File
-            </button>
-            <input
-              type="file"
-              id="uploadExcelInput"
-              name="excel_file"
-              class="d-none"
-            />
-            <!-- مودال كود الرفع -->
-            <div
-              class="modal fade"
-              id="codeModal"
-              tabindex="-1"
-              aria-hidden="true"
-            >
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                  <form id="codeForm">
-                    <div class="modal-header">
-                      <h5 class="modal-title">Enter Upload Code</h5>
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                      ></button>
+          <!-- ✅ حالة وجود بيانات — فيديو خلفية للناف + الفلاتر -->
+          <div class="mb-3" style="position: relative; width: 100%; max-width: 1600px; margin-left: auto; margin-right: auto; max-height: 300px; overflow: hidden; border-radius: 8px;">
+            <video
+              src="{% static 'assets/images/cinematic_fully_watermarked.mp4' %}"
+              style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;"
+              autoplay
+              muted
+              loop
+              playsinline
+            ></video>
+            <div style="position: relative; z-index: 2; padding: 100px 18px;">
+              <div
+                class="d-flex flex-wrap align-items-center justify-content-end gap-3 mb-3"
+              >
+                <div class="d-flex align-items-center">
+                  <div class="custom-select-wrapper">
+                    <select id="month-select" class="custom-select">
+                      <option value="">-- All Months --</option>
+                      {% for m in months %}
+                      <option value="{{ m }}">{{ m }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <button id="export-excel-btn" class="btn btn-download-excel ms-3">
+                    📥 Download Excel
+                  </button>
+                </div>
+                <button id="uploadBtn" class="upload-btn-small mb-0">
+                  Upload File
+                </button>
+                <input
+                  type="file"
+                  id="uploadExcelInput"
+                  name="excel_file"
+                  class="d-none"
+                />
+                <div
+                  class="modal fade"
+                  id="codeModal"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                      <form id="codeForm">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Enter Upload Code</h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          <input
+                            type="password"
+                            id="upload_code"
+                            maxlength="4"
+                            class="form-control text-center"
+                            placeholder="****"
+                            required
+                          />
+                        </div>
+                        <div class="modal-footer">
+                          <button type="submit" class="btn btn-primary">
+                            Confirm
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                    <div class="modal-body">
-                      <input
-                        type="password"
-                        id="upload_code"
-                        maxlength="4"
-                        class="form-control text-center"
-                        placeholder="****"
-                        required
-                      />
-                    </div>
-                    <div class="modal-footer">
-                      <button type="submit" class="btn btn-primary">
-                        Confirm
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
               </div>
+              <ul
+                class="nav nav-tabs"
+                id="dashboard-tabs"
+                role="tablist"
+               
+              >
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link {% if active_tab == 'warehouse-overview' %}active{% endif %}" data-tab="warehouse-overview">Warehouse and Account Overview</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link {% if active_tab == 'all' %}active{% endif %}" data-tab="all">Aramco KPI</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" data-tab="nespresso-kpi">Nespresso KPI</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" data-tab="roche-kpi">Roche KPI</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" data-tab="tamer-kpi">Tamer KPI</button>
+                </li>
+                {% for tab in excel_tabs %} {% if tab.display|lower != "all" %}
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" data-tab="{{ tab.original }}">
+                    {{ tab.display }}
+                  </button>
+                </li>
+                {% endif %} {% endfor %}
+              </ul>
             </div>
           </div>
-          {% if data_is_uploaded %} 
-          {% include 'components/ui-kits/alert/components/alert.html' %} 
-          {% endif %}
           <div id="filter-message"></div>
-          <!-- 🔹 تبويبات علوية بشكل أنيق -->
-          <!-- 🔹 تبويبات علوية -->
-          <ul
-            class="nav nav-tabs mt-4 justify-content-start"
-            id="dashboard-tabs"
-            role="tablist"
-          >
-            <li class="nav-item" role="presentation">
-              <button class="nav-link {% if active_tab == 'warehouse-overview' %}active{% endif %}" data-tab="warehouse-overview">Warehouse and Account Overview</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link {% if active_tab == 'all' %}active{% endif %}" data-tab="all">Aramco KPI</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" data-tab="nespresso-kpi">Nespresso KPI</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" data-tab="roche-kpi">Roche KPI</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" data-tab="tamer-kpi">Tamer KPI</button>
-            </li>
-            {% for tab in excel_tabs %} {% if tab.display|lower != "all" %}
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" data-tab="{{ tab.original }}">
-                {{ tab.display }}
-              </button>
-            </li>
-            {% endif %} {% endfor %}
-          </ul>
           <!-- 🔹 محتوى التابات -->
           <div id="tab-content" class="card p-4 shadow-sm bg-white mt-3">
             {% if active_tab == "warehouse-overview" %}
@@ -632,17 +626,17 @@
               : "";
           return `
       <div class="col-md-6 mb-4">
-        <div class="card shadow-sm h-100" style="border-width:2px; border-radius:12px; border-color: var(--site-soft, #9ddef6);">
-          <div class="card-header text-center fw-bold" style="background: var(--site-bg-2, #a2eaff); color:#1a5f7a; font-size:18px;">
+        <div class="card shadow-sm h-100" style="border-width:2px; border-radius:12px; border-color: #E2E8F0;">
+          <div class="card-header text-center fw-bold" style="background: #CFE1F7; color:#1E293B; font-size:18px;">
             ${tab.name}
           </div>
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <p class="mb-0" style="color: #1a5f7a !important;"><strong>Hit:</strong> ${tab.hit_pct}%</p>
+              <p class="mb-0" style="color: #2F6EC2 !important;"><strong>Hit:</strong> ${tab.hit_pct}%</p>
               ${targetHtml}
             </div>
             <div class="progress" style="height:20px; border-radius:10px; overflow:hidden;">
-              <div class="progress-bar" role="progressbar" style="width: ${tab.hit_pct}%; background: var(--site-accent, #74bcff);" aria-valuenow="${tab.hit_pct}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar" role="progressbar" style="width: ${tab.hit_pct}%; background: #4A90E2;" aria-valuenow="${tab.hit_pct}" aria-valuemin="0" aria-valuemax="100">
                 ${tab.hit_pct}%
               </div>
             </div>

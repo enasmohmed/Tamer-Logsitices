@@ -1,55 +1,59 @@
 /**
- * Aramco Dashboard – Primary Palette
- * يطبق الألوان الأساسية على الموقع دون تغيير الهيكل.
+ * TAMER 3PL Dashboard – Blue Palette (من الصورة)
+ * درجات أزرق واحدة: #EAF2FB → #1F4F9A
  */
 
 :root {
-  /* 🟢 أخضر (Outbound / Success / SLA) */
-  --aramco-primary-green: #3F8F7A;
-  --aramco-deep-green: #2F6F5F;
-  --aramco-soft-green: #7FB7A6;
+  /* 🔵 درجات الأزرق */
+  --aramco-primary-blue: #4A90E2;
+  --aramco-medium-blue: #3A7BD5;
+  --aramco-dark-blue: #2F6EC2;
+  --aramco-extra-dark: #1F4F9A;
+  --aramco-light-blue: #A9C9F0;
+  --aramco-soft-blue: #CFE1F7;
+  --aramco-bg-light: #EAF2FB;
 
-  /* 🔵 أزرق (Inbound / Neutral) */
-  --aramco-primary-blue: #4C8FD6;
-  --aramco-medium-blue: #6FA6DE;
-  --aramco-light-blue: #A8C8EB;
+  /* Success / Outbound — أزرق للتوحيد */
+  --aramco-primary-green: #2F6EC2;
+  --aramco-deep-green: #1F4F9A;
+  --aramco-soft-green: #CFE1F7;
 
-  /* 🟠 برتقالي (Utilization / Capacity) */
-  --aramco-capacity-orange: #E7B17A;
-  --aramco-soft-orange: #F2D3AE;
+  /* Utilization — درجات أزرق بدل برتقالي */
+  --aramco-capacity-orange: #4A90E2;
+  --aramco-soft-orange: #A9C9F0;
 
-  /* 🔴 أحمر (Delays / Risk) */
+  /* Danger / Alert — أحمر خفيف للتنبيهات فقط */
   --aramco-alert-red: #D9645A;
   --aramco-soft-red: #F3B2AD;
 
-  /* ⚪ خلفيات وكروت (أبيض/رمادي فاتح بدل اللبني) */
-  --aramco-bg-main: #EEEEEE;
+  /* ⚪ كروت وخلفيات */
+  --aramco-bg-main: #EAF2FB;
   --aramco-card: #FFFFFF;
   --aramco-card-secondary: #FFFFFF;
-  --aramco-border: #E1E5EA;
-  --aramco-shadow: #D6DBE1;
+  --aramco-border: #E2E8F0;
+  --aramco-shadow: rgba(0, 0, 0, 0.05);
 
-  /* 🖤 نصوص وأيقونات */
-  --aramco-title: #2C2F33;
-  --aramco-body: #5F6B78;
-  --aramco-muted: #9AA3AD;
-  --aramco-icon: #8C96A0;
+  /* 🖤 نصوص */
+  --aramco-title: #1E293B;
+  --aramco-body: #475569;
+  --aramco-muted: #94A3B8;
+  --aramco-icon: #3A7BD5;
 
-  /* ربط الثيم العام بالألوان الجديدة */
+  /* ربط الثيم */
   --theme-default: var(--aramco-primary-blue);
-  --theme-secondary: var(--aramco-capacity-orange);
+  --theme-secondary: var(--aramco-dark-blue);
   --body-font-color: var(--aramco-body);
-  --light-background: var(--aramco-bg-main);
-  --light-bg: var(--aramco-bg-main);
-  --light2: var(--aramco-card-secondary);
-  --recent-box-bg: var(--aramco-card-secondary);
+  --light-background: var(--aramco-bg-light);
+  --light-bg: var(--aramco-bg-light);
+  --light2: var(--aramco-soft-blue);
+  --recent-box-bg: var(--aramco-soft-blue);
   --chart-border: var(--aramco-border);
   --bs-heading-color: var(--aramco-title);
   --bs-card-cap-color: var(--aramco-muted);
-  --light-shade-primary: rgba(76, 143, 214, 0.15);
+  --light-shade-primary: rgba(74, 144, 226, 0.15);
 }
 
-/* خلفية الصفحة والجسم */
+/* خلفية الصفحة */
 .page-body-wrapper,
 body .page-body-wrapper {
   background-color: var(--aramco-bg-main) !important;
@@ -58,11 +62,11 @@ body .page-body-wrapper {
   background-color: var(--aramco-bg-main);
 }
 
-/* كروت وخلفيات ثانوية */
+/* كروت */
 .card {
   background-color: var(--aramco-card);
   border-color: var(--aramco-border);
-  box-shadow: 0 1px 3px rgba(214, 219, 225, 0.2);
+  box-shadow: 0 1px 3px var(--aramco-shadow);
 }
 .card-header {
   background-color: var(--aramco-card) !important;
@@ -70,7 +74,7 @@ body .page-body-wrapper {
   color: var(--aramco-title);
 }
 
-/* Primary = أزرق (Inbound) */
+/* Primary = أزرق التاب */
 .bg-primary,
 .btn-primary,
 .badge.bg-primary,
@@ -80,7 +84,6 @@ body .page-body-wrapper {
 .border-primary,
 .table-primary,
 .bg-primary .svg-fill {
-  /* background-color: var(--aramco-primary-blue) !important; */
   color: #fff !important;
   border-color: var(--aramco-primary-blue) !important;
 }
@@ -88,22 +91,24 @@ body .page-body-wrapper {
 .bg-primary.text-primary { color: #fff !important; }
 .bg-light-primary,
 .light-primary {
-  /* خلفية لبني فاتح → رمادي فاتح */
-  background-color: #EEEEEE !important;
-  color: var(--aramco-deep-green);
+  background-color: var(--aramco-soft-blue) !important;
+  color: var(--aramco-extra-dark);
 }
 .text-primary,
 .txt-primary { color: var(--aramco-primary-blue) !important; }
 .btn-primary:not(.bg-primary) {
-  /* background-color: var(--aramco-primary-blue) !important; */
   border-color: var(--aramco-primary-blue) !important;
 }
 .btn-primary:hover {
   background-color: var(--aramco-medium-blue) !important;
   border-color: var(--aramco-medium-blue) !important;
 }
+.btn-primary:active {
+  background-color: var(--aramco-dark-blue) !important;
+  border-color: var(--aramco-dark-blue) !important;
+}
 
-/* Success = أخضر (Outbound / SLA) */
+/* Success = أزرق غامق */
 .bg-success,
 .btn-success,
 .badge.bg-success,
@@ -112,52 +117,49 @@ body .page-body-wrapper {
 .text-success,
 .border-success,
 .table-success {
-  /* background-color: var(--aramco-primary-green) !important; */
   color: #fff !important;
-  border-color: var(--aramco-primary-green) !important;
+  border-color: var(--aramco-dark-blue) !important;
 }
 .bg-success.txt-success,
 .bg-success.text-success { color: #fff !important; }
 .bg-light-success,
 .light-success {
-  background-color: rgba(63, 143, 122, 0.15) !important;
-  color: var(--aramco-deep-green);
+  background-color: var(--aramco-soft-blue) !important;
+  color: var(--aramco-extra-dark);
 }
 .text-success,
-.txt-success { color: var(--aramco-primary-green) !important; }
+.txt-success { color: var(--aramco-dark-blue) !important; }
 .btn-success:not(.bg-success) {
-  background-color: var(--aramco-primary-green) !important;
-  border-color: var(--aramco-primary-green) !important;
+  background-color: var(--aramco-dark-blue) !important;
+  border-color: var(--aramco-dark-blue) !important;
 }
 .btn-success:hover {
-  background-color: var(--aramco-deep-green) !important;
-  border-color: var(--aramco-deep-green) !important;
+  background-color: var(--aramco-extra-dark) !important;
+  border-color: var(--aramco-extra-dark) !important;
 }
 
-/* Warning / Utilization = برتقالي */
+/* Warning / Utilization = أزرق */
 .bg-warning,
 .btn-warning,
 .badge.bg-warning,
 .text-warning,
 .txt-warning {
-  /* background-color: var(--aramco-capacity-orange) !important; */
   color: var(--aramco-title) !important;
-  border-color: var(--aramco-capacity-orange) !important;
+  border-color: var(--aramco-primary-blue) !important;
 }
 .bg-light-warning {
-  background-color: var(--aramco-soft-orange) !important;
+  background-color: var(--aramco-soft-blue) !important;
 }
 .text-warning,
-.txt-warning { color: var(--aramco-capacity-orange) !important; }
+.txt-warning { color: var(--aramco-primary-blue) !important; }
 
-/* Danger / Late = أحمر */
+/* Danger */
 .bg-danger,
 .btn-danger,
 .badge.bg-danger,
 .alert-danger,
 .text-danger,
 .txt-danger {
-  /* background-color: var(--aramco-alert-red) !important; */
   color: #fff !important;
   border-color: var(--aramco-alert-red) !important;
 }
@@ -167,7 +169,7 @@ body .page-body-wrapper {
 .text-danger,
 .txt-danger { color: var(--aramco-alert-red) !important; }
 
-/* نصوص وعناوين */
+/* نصوص */
 h1, h2, h3, h4, h5, h6,
 .card-title,
 .fw-bold.text-dark {
@@ -193,41 +195,41 @@ p,
 }
 .table thead th,
 .dashboard-data-table th {
-  background-color: var(--aramco-card-secondary) !important;
+  background-color: var(--aramco-soft-blue) !important;
   color: var(--aramco-title);
 }
 .table-responsive {
   border-color: var(--aramco-border);
 }
 
-/* أيقونات الداشبورد */
+/* أيقونات */
 .card-header-icon.text-primary { color: var(--aramco-primary-blue) !important; }
 .card-header-icon.text-secondary { color: var(--aramco-muted) !important; }
-.inbound-kpi-icon.bg-success-soft { background-color: rgba(63, 143, 122, 0.15) !important; color: var(--aramco-primary-green) !important; }
-.inbound-kpi-icon.bg-primary-soft { background-color: rgba(76, 143, 214, 0.15) !important; color: var(--aramco-primary-blue) !important; }
+.inbound-kpi-icon.bg-success-soft { background-color: var(--aramco-soft-blue) !important; color: var(--aramco-dark-blue) !important; }
+.inbound-kpi-icon.bg-primary-soft { background-color: var(--aramco-soft-blue) !important; color: var(--aramco-primary-blue) !important; }
 
-/* Progress bars (SLA / نجاح) */
+/* Progress bars */
 .progress-bar.bg-success,
 .progress-bar[class*="success"] {
-  background-color: var(--aramco-primary-green) !important;
+  background-color: var(--aramco-dark-blue) !important;
 }
 .progress-bar.bg-warning {
-  background-color: var(--aramco-capacity-orange) !important;
+  background-color: var(--aramco-primary-blue) !important;
 }
 .progress-bar.bg-danger {
   background-color: var(--aramco-alert-red) !important;
 }
 
-/* شكل عام للكروت في الداشبورد */
+/* كروت الداشبورد */
 .inbound-kpi-card,
 .dashboard-kpi-card {
   background: var(--aramco-card) !important;
   border-color: var(--aramco-border) !important;
-  box-shadow: 0 2px 8px rgba(214, 219, 225, 0.25);
+  box-shadow: 0 2px 8px var(--aramco-shadow);
 }
 .inbound-kpi-card .inbound-kpi-value,
 .dashboard-kpi-card .dashboard-kpi-value {
-  color: var(--aramco-title) !important;
+  color: var(--aramco-dark-blue) !important;
 }
 .inbound-kpi-card .inbound-kpi-label,
 .dashboard-kpi-card .dashboard-kpi-label {
