@@ -22,10 +22,10 @@
   --aramco-alert-red: #D9645A;
   --aramco-soft-red: #F3B2AD;
 
-  /* ⚪ خلفيات وكروت */
-  --aramco-bg-main: #F3F5F7;
+  /* ⚪ خلفيات وكروت (أبيض/رمادي فاتح بدل اللبني) */
+  --aramco-bg-main: #EEEEEE;
   --aramco-card: #FFFFFF;
-  --aramco-card-secondary: #F8FAFB;
+  --aramco-card-secondary: #FFFFFF;
   --aramco-border: #E1E5EA;
   --aramco-shadow: #D6DBE1;
 
@@ -88,7 +88,8 @@ body .page-body-wrapper {
 .bg-primary.text-primary { color: #fff !important; }
 .bg-light-primary,
 .light-primary {
-  background-color: var(--aramco-light-blue) !important;
+  /* خلفية لبني فاتح → رمادي فاتح */
+  background-color: #EEEEEE !important;
   color: var(--aramco-deep-green);
 }
 .text-primary,

@@ -3382,24 +3382,32 @@ class UploadExcelViewRoche(View):
         from django.db.models import Sum, Q
         wh_filter = (request.GET.get("wh") or request.GET.get("warehouse") or "").strip()
         selected_warehouse = wh_filter if wh_filter else None
-        day_filter = (request.GET.get("day") or "").strip().lower()
+
+        # فلتر الأيام: الافتراضي "اليوم"، مع دعم اليوم/أمس/قبل أمس
+        raw_day = (request.GET.get("day") or "").strip().lower()
         tz_today = timezone.now().date()
+        valid_days = {"today", "yesterday", "day_before_yesterday"}
+        day_filter = raw_day if raw_day in valid_days else "today"
+
         if day_filter == "today":
             date_filter = tz_today
         elif day_filter == "yesterday":
             date_filter = tz_today - timedelta(days=1)
+        elif day_filter == "day_before_yesterday":
+            date_filter = tz_today - timedelta(days=2)
         else:
             date_filter = None
 
-        qs = WarehouseAccountOverview.objects.all().order_by("warehouse", "account")
+        # نحافظ على ترتيب الإكسل (ترتيب الإدخال في الداتابيز)
+        qs = WarehouseAccountOverview.objects.all()
         if selected_warehouse:
             qs = qs.filter(warehouse=selected_warehouse)
         if date_filter is not None:
             qs = qs.filter(created_at__date=date_filter)
         raw_rows = list(
             qs.values(
-                "warehouse", "account", "inbound", "outbound",
-                "clearance", "occupied_location", "transportation"
+                "warehouse", "account", "capacity", "clearance", "inbound", "outbound",
+                "transportation", "occupied_location"
             )
         )
         # حذف أي صف فيه قيمة NaN
@@ -3417,61 +3425,88 @@ class UploadExcelViewRoche(View):
             total_inbound=Sum("inbound"),
             total_outbound=Sum("outbound"),
             total_clearance=Sum("clearance"),
-            total_occupied=Sum("occupied_location"),
             total_transportation=Sum("transportation"),
         )
         total_inbound = agg["total_inbound"] or 0
         total_outbound = agg["total_outbound"] or 0
         total_clearance = agg["total_clearance"] or 0
-        total_occupied_location = agg["total_occupied"] or 0
         total_transportation = agg["total_transportation"] or 0
-        by_warehouse = {}
+
+        # أسماء المستودعات بنفس ترتيب ظهورها (بدون ترتيب أبجدي)
+        warehouse_names = []
+        seen_wh = set()
         for r in rows:
-            w = r["warehouse"] or ""
-            if w not in by_warehouse:
-                by_warehouse[w] = {"inbound": 0, "outbound": 0}
-            by_warehouse[w]["inbound"] += r["inbound"] or 0
-            by_warehouse[w]["outbound"] += r["outbound"] or 0
-        warehouse_names = sorted(by_warehouse.keys())
-        account_names = sorted({str(r.get("account") or "").strip() for r in rows if str(r.get("account") or "").strip()})
-        chart_data = [
-            {
-                "type": "bar",
-                "name": "Inbound",
-                "color": "#36a2eb",
-                "dataPoints": [{"label": w, "y": by_warehouse[w]["inbound"]} for w in warehouse_names],
-            },
-            {
-                "type": "bar",
-                "name": "Outbound",
-                "color": "#ff9f40",
-                "dataPoints": [{"label": w, "y": by_warehouse[w]["outbound"]} for w in warehouse_names],
-            },
-        ]
+            wh_name = str(r.get("warehouse") or "").strip()
+            if wh_name and wh_name not in seen_wh:
+                seen_wh.add(wh_name)
+                warehouse_names.append(wh_name)
+
+        # يمكن أيضًا الحفاظ على ترتيب الحسابات كما في الداتا
+        account_names = []
+        seen_acc = set()
+        for r in rows:
+            acc_name = str(r.get("account") or "").strip()
+            if acc_name and acc_name not in seen_acc:
+                seen_acc.add(acc_name)
+                account_names.append(acc_name)
         totals = {
             "total_inbound": total_inbound,
             "total_outbound": total_outbound,
             "total_clearance": total_clearance,
-            "total_occupied_location": total_occupied_location,
             "total_transportation": total_transportation,
         }
-        # Capacity Used vs Available (عند الفلتر حسب WH أو اليوم نطبق نفس الفلتر)
-        cap_qs = CapacityVolume.objects.all()
-        if selected_warehouse:
-            cap_qs = cap_qs.filter(warehouse=selected_warehouse)
-        if date_filter is not None:
-            cap_qs = cap_qs.filter(created_at__date=date_filter)
-        total_capacity = cap_qs.aggregate(s=Sum("capacity"))["s"] or 0
-        used_occupied = total_occupied_location  # مجموع Occupied Location (مصفى حسب WH إن وُجد)
-        available = max(0, total_capacity - used_occupied)
-        used_pct = (used_occupied / total_capacity * 100) if total_capacity else 0
-        available_pct = (available / total_capacity * 100) if total_capacity else 100
-        capacity_chart = {
-            "used": used_occupied,
-            "available": available,
-            "total_capacity": total_capacity,
-            "used_pct": round(used_pct, 1),
-            "available_pct": round(available_pct, 1),
+        # أعلى وأقل مستودع (Warehouse) وأعلى وأقل Account لكل مقياس — للعرض: Highest Warehouse – Account: WH (count) – Acc (count)
+        by_warehouse = {}
+        by_account = {}
+        for r in rows:
+            wh = str(r.get("warehouse") or "").strip()
+            acc = str(r.get("account") or "").strip()
+            if wh not in by_warehouse:
+                by_warehouse[wh] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
+            by_warehouse[wh]["inbound"] += r.get("inbound") or 0
+            by_warehouse[wh]["outbound"] += r.get("outbound") or 0
+            by_warehouse[wh]["clearance"] += r.get("clearance") or 0
+            by_warehouse[wh]["transportation"] += r.get("transportation") or 0
+            if acc not in by_account:
+                by_account[acc] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
+            by_account[acc]["inbound"] += r.get("inbound") or 0
+            by_account[acc]["outbound"] += r.get("outbound") or 0
+            by_account[acc]["clearance"] += r.get("clearance") or 0
+            by_account[acc]["transportation"] += r.get("transportation") or 0
+
+        def _high_low_wh(metric_key):
+            if not by_warehouse:
+                return None, 0, None, 0
+            items = [(w, by_warehouse[w][metric_key]) for w in by_warehouse]
+            items.sort(key=lambda x: (x[1], x[0]), reverse=True)
+            high_w, high_v = items[0] if items else (None, 0)
+            low_w, low_v = items[-1] if items else (None, 0)
+            return high_w, high_v, low_w, low_v
+
+        def _high_low_acc(metric_key):
+            if not by_account:
+                return None, 0, None, 0
+            items = [(a, by_account[a][metric_key]) for a in by_account]
+            items.sort(key=lambda x: (x[1], x[0]), reverse=True)
+            high_a, high_v = items[0] if items else (None, 0)
+            low_a, low_v = items[-1] if items else (None, 0)
+            return high_a, high_v, low_a, low_v
+
+        def _merge_metric(metric_key):
+            hw, hwv, lw, lwv = _high_low_wh(metric_key)
+            ha, hav, la, lav = _high_low_acc(metric_key)
+            return {
+                "high_warehouse": hw, "high_warehouse_value": hwv,
+                "low_warehouse": lw, "low_warehouse_value": lwv,
+                "high_account": ha, "high_account_value": hav,
+                "low_account": la, "low_account_value": lav,
+            }
+
+        card_high_low = {
+            "clearance": _merge_metric("clearance"),
+            "inbound": _merge_metric("inbound"),
+            "outbound": _merge_metric("outbound"),
+            "transportation": _merge_metric("transportation"),
         }
         # تحضير الصفوف مع دمج خلايا Warehouse + تناوب لون الخلفية + بادج للـ Account (رمادي فاتح / بينك)
         table_rows = []
@@ -3490,12 +3525,17 @@ class UploadExcelViewRoche(View):
             wh = r.get("warehouse") or ""
             if wh != prev_wh:
                 if group_count > 0:
-                    for j in range(len(table_rows) - group_count, len(table_rows)):
-                        if j == len(table_rows) - group_count:
+                    first_in_group = len(table_rows) - group_count
+                    group_capacity = table_rows[first_in_group].get("capacity") or 0
+                    for j in range(first_in_group, len(table_rows)):
+                        if j == first_in_group:
                             table_rows[j]["warehouse_rowspan"] = group_count
                             table_rows[j]["warehouse_value"] = prev_wh
+                            table_rows[j]["capacity_rowspan"] = group_count
+                            table_rows[j]["capacity_value"] = group_capacity
                         else:
                             table_rows[j]["warehouse_rowspan"] = 0
+                            table_rows[j]["capacity_rowspan"] = 0
                 if prev_wh is not None:
                     row_bg = "white" if row_bg == "light" else "light"
                 prev_wh = wh
@@ -3503,39 +3543,86 @@ class UploadExcelViewRoche(View):
             else:
                 group_count += 1
             r["row_bg"] = row_bg
+            # Utilization % = (Occupied Location / Capacity) * 100
+            cap = r.get("capacity") or 0
+            occ = r.get("occupied_location") or 0
+            if cap and cap > 0:
+                r["utilization_pct"] = round(occ / cap * 100, 1)
+            else:
+                r["utilization_pct"] = None
             table_rows.append(r)
         if group_count > 0:
-            for j in range(len(table_rows) - group_count, len(table_rows)):
-                if j == len(table_rows) - group_count:
+            first_in_group = len(table_rows) - group_count
+            group_capacity = table_rows[first_in_group].get("capacity") or 0
+            for j in range(first_in_group, len(table_rows)):
+                if j == first_in_group:
                     table_rows[j]["warehouse_rowspan"] = group_count
                     table_rows[j]["warehouse_value"] = prev_wh
+                    table_rows[j]["capacity_rowspan"] = group_count
+                    table_rows[j]["capacity_value"] = group_capacity
                 else:
                     table_rows[j]["warehouse_rowspan"] = 0
-        chart_data_json = json.dumps(_sanitize_for_json(chart_data))
-        # قائمة كل المستودعات (للقائمة المنسدلة) — من الداتا الكاملة بدون فلتر اليوم
-        all_warehouse_names = sorted(
-            set(
-                WarehouseAccountOverview.objects.values_list("warehouse", flat=True)
-            )
-        )
-        all_warehouse_names = [str(x).strip() for x in all_warehouse_names if str(x).strip()]
+                    table_rows[j]["capacity_rowspan"] = 0
+        # قائمة كل المستودعات (للقائمة المنسدلة) — من كل الداتا بدون فلتر اليوم، مع الحفاظ على ترتيب الإدخال
+        all_warehouse_names = []
+        seen_all_wh = set()
+        for w in WarehouseAccountOverview.objects.all().values_list("warehouse", flat=True):
+            w_name = (w or "").strip()
+            if w_name and w_name not in seen_all_wh:
+                seen_all_wh.add(w_name)
+                all_warehouse_names.append(w_name)
+
+        # كروت Capacity and Utilization: لكل مستودع — Utilization %، أعلى Account (اسم + عدد)، أقل Account (اسم + عدد)
+        wh_rows = {}
+        for r in rows:
+            wh = str(r.get("warehouse") or "").strip()
+            if wh not in wh_rows:
+                wh_rows[wh] = []
+            wh_rows[wh].append(dict(r))
+        warehouse_capacity_cards = []
+        for wh in warehouse_names:
+            if wh not in wh_rows or not wh_rows[wh]:
+                continue
+            grp = wh_rows[wh]
+            cap = grp[0].get("capacity") or 0
+            total_occ = sum(x.get("occupied_location") or 0 for x in grp)
+            # النسبة في الكروت (والشارت) كعدد صحيح فقط
+            util_pct = int(round(total_occ / cap * 100)) if cap and cap > 0 else 0
+            sorted_by_occ = sorted(grp, key=lambda x: (x.get("occupied_location") or 0), reverse=True)
+            high_acc = sorted_by_occ[0] if sorted_by_occ else {}
+            low_acc = sorted_by_occ[-1] if sorted_by_occ else {}
+            warehouse_capacity_cards.append({
+                "warehouse": wh,
+                "utilization_pct": util_pct,
+                "highest_account_name": str(high_acc.get("account") or "").strip() or "—",
+                "highest_account_count": high_acc.get("occupied_location") or 0,
+                "lowest_account_name": str(low_acc.get("account") or "").strip() or "—",
+                "lowest_account_count": low_acc.get("occupied_location") or 0,
+            })
+
+        # تواريخ اليوم/أمس/قبل أمس للعرض في الدروب داون
+        yesterday_date = tz_today - timedelta(days=1)
+        day_before_yesterday_date = tz_today - timedelta(days=2)
 
         html = render_to_string(
             "components/ui-kits/tab-bootstrap/components/warehouse-overview-tab.html",
             {
                 "totals": totals,
-                "chart_data_json": chart_data_json,
                 "table_rows": table_rows,
                 "warehouse_names": warehouse_names,
                 "account_names": account_names,
-                "capacity_chart": capacity_chart,
                 "selected_warehouse": selected_warehouse,
                 "all_warehouse_names": all_warehouse_names,
                 "selected_day": day_filter or "",
+                "today_date": tz_today,
+                "yesterday_date": yesterday_date,
+                "day_before_yesterday_date": day_before_yesterday_date,
+                "card_high_low": card_high_low,
+                "warehouse_capacity_cards": warehouse_capacity_cards,
             },
             request=request,
         )
-        return {"detail_html": html, "chart_data": chart_data}
+        return {"detail_html": html, "chart_data": []}
 
     def filter_total_lead_time_detail(self, request, selected_month=None):
         try:

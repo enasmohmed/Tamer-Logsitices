@@ -21,6 +21,11 @@
     <input type="text" name="sheet_name" id="id_sheet_name" value="" placeholder="اتركه فارغًا للاكتشاف التلقائي" maxlength="100" style="width: 280px;">
   </div>
   <div class="form-row" style="margin-top: 12px;">
+    <label for="id_effective_date">تاريخ البيانات (اليوم / أمس / أي تاريخ قديم):</label>
+    <input type="date" name="effective_date" id="id_effective_date" value="{{ default_effective_date|default_if_none:'' }}">
+    <p class="help">سيتم حفظ كل الصفوف بهذا التاريخ في حقل created_at، ويمكنك بعد ذلك الفلترة في صفحة الأدمن بهذا التاريخ.</p>
+  </div>
+  <div class="form-row" style="margin-top: 12px;">
     <label for="id_excel_file">ملف Excel:</label>
     <input type="file" name="excel_file" id="id_excel_file" accept=".xlsx,.xls" required>
   </div>

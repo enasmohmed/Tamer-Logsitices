@@ -2,8 +2,38 @@
 {% load i18n %}
 
 {% block content %}
-<p style="margin-bottom: 12px;">
-  <a href="{% url 'admin:dashboard_warehouseaccountoverview_import' %}" class="addlink">📥 استيراد من Excel (Da-tamer.xlsx / Sheet1)</a>
-</p>
+<div style="margin-bottom: 12px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+  <a href="{% url 'admin:dashboard_warehouseaccountoverview_import' %}" class="addlink">
+    📥 استيراد من Excel (Da-tamer.xlsx / Sheet1)
+  </a>
+
+  <form method="get" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0;">
+    {# نحافظ على باقي بارامترات الاستعلام (بحث، ترتيب، إلخ) #}
+    {% for key, value in request.GET.items %}
+      {% if key != "day" and key != "warehouse__exact" %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endif %}
+    {% endfor %}
+
+    <label for="changelist-day-filter" style="font-weight:bold;">Day:</label>
+    <select id="changelist-day-filter" name="day" onchange="this.form.submit();">
+      <option value="">All</option>
+      <option value="today" {% if request.GET.day == "today" or not request.GET.day %}selected{% endif %}>Today</option>
+      <option value="yesterday" {% if request.GET.day == "yesterday" %}selected{% endif %}>Yesterday</option>
+      <option value="day_before_yesterday" {% if request.GET.day == "day_before_yesterday" %}selected{% endif %}>Day Before Yesterday</option>
+    </select>
+
+    <label for="changelist-warehouse-filter" style="font-weight:bold;">By Warehouse:</label>
+    <select id="changelist-warehouse-filter" name="warehouse__exact" onchange="this.form.submit();">
+      <option value="">All</option>
+      {% for obj in cl.queryset %}
+        {% if obj.warehouse %}
+          <option value="{{ obj.warehouse }}" {% if request.GET.warehouse__exact == obj.warehouse %}selected{% endif %}>{{ obj.warehouse }}</option>
+        {% endif %}
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
 {{ block.super }}
 {% endblock %}

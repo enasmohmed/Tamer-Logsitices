@@ -90,23 +90,26 @@ class DashboardDataCache(models.Model):
 
 class WarehouseAccountOverview(models.Model):
     """
-    بيانات تاب Warehouse and Account Overview — مصدرها ملف Da-tamer.xlsx شيت Sheet1.
-    الأدمن يرفع الملف ويستورد الداتا ثم يقدر يعدّل الصفوف من هنا.
+    بيانات تاب Warehouse and Account Overview — مصدرها ملف Da-tamer.xlsx شيت Da-tamer (أو Sheet1).
+    الأعمدة: Warehouse, Account, Capacity, Clearance, Inbound, Outbound, Transportation, Occupied Location.
+    Utilization % = (Occupied Location / Capacity) * 100 (محسوب عند العرض).
     """
     warehouse = models.CharField(max_length=255, db_index=True)
     account = models.CharField(max_length=255, db_index=True)
+    capacity = models.PositiveIntegerField(default=0)
+    clearance = models.PositiveIntegerField(default=0)
     inbound = models.PositiveIntegerField(default=0)
     outbound = models.PositiveIntegerField(default=0)
-    clearance = models.PositiveIntegerField(default=0)
-    occupied_location = models.PositiveIntegerField(default=0)
     transportation = models.PositiveIntegerField(default=0)
+    occupied_location = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Warehouse & Account Row"
         verbose_name_plural = "Warehouse and Account Overview"
-        ordering = ("warehouse", "account")
+        # نحافظ على ترتيب الصفوف كما تأتي من ملف الإكسل (حسب الإدخال)
+        ordering = ("id",)
 
     def __str__(self):
         return f"{self.warehouse} — {self.account}"
