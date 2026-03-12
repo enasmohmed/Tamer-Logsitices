@@ -5,13 +5,13 @@
     background: #FFFFFF !important;
     border-radius: 12px;
     border: 1px solid #E2E8F0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 78%);
     transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
   .warehouse-theme-card:hover {
     background: #EAF2FB !important;
     border-color: #4A90E2;
-    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.15);
+    box-shadow: 0 6px 20px rgba(139, 183, 233, 0.15);
   }
   .warehouse-theme-card .card-body {
     padding: 1.1rem 1.25rem;
@@ -114,6 +114,7 @@
   }
   .warehouse-kpi-card {
     cursor: pointer;
+    overflow: hidden;
   }
   .warehouse-kpi-card .card-high-low {
     font-size: 0.8rem;
@@ -129,8 +130,18 @@
     color: #fff;
     line-height: 1.4;
   }
+  /* الـ hover يظهر على الكارد اللي فوقه فقط، والمحتوى يبقى داخل الكارد */
   .warehouse-kpi-card:hover .card-high-low-hover {
     display: flex !important;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    margin-top: 0;
+    padding: 10px 1rem 1rem;
+    background: rgba(79, 112, 165, 0.92);
+    border-radius: 0 0 12px 12px;
   }
   #warehouse-data-table tbody tr.warehouse-row-highlight td {
     background-color: rgba(74, 144, 226, 0.2) !important;
@@ -215,15 +226,15 @@
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
             <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.high_warehouse|default:"-" }} ({{ card_high_low.clearance.high_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="high" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.high_warehouse|default:"-" }} ({{ card_high_low.clearance.high_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.high_account|default:"-" }} ({{ card_high_low.clearance.high_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="high" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.high_account|default:"-" }} ({{ card_high_low.clearance.high_account_value|default:0 }})</a>
             </div>
             <div>
               <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="low" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="clearance" style="color:#444;">{{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="low" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})</a>
             </div>
           </div>
         </div>
@@ -241,15 +252,15 @@
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
             <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.high_warehouse|default:"-" }} ({{ card_high_low.inbound.high_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="high" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.high_warehouse|default:"-" }} ({{ card_high_low.inbound.high_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.high_account|default:"-" }} ({{ card_high_low.inbound.high_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="high" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.high_account|default:"-" }} ({{ card_high_low.inbound.high_account_value|default:0 }})</a>
             </div>
             <div>
               <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="low" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="inbound" style="color:#444;">{{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="low" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})</a>
             </div>
           </div>
         </div>
@@ -267,15 +278,15 @@
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
             <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.high_warehouse|default:"-" }} ({{ card_high_low.outbound.high_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="high" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.high_warehouse|default:"-" }} ({{ card_high_low.outbound.high_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.high_account|default:"-" }} ({{ card_high_low.outbound.high_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="high" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.high_account|default:"-" }} ({{ card_high_low.outbound.high_account_value|default:0 }})</a>
             </div>
             <div>
               <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="low" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="outbound" style="color:#444;">{{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="low" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})</a>
             </div>
           </div>
         </div>
@@ -293,15 +304,15 @@
           </div>
           <div class="card-high-low-hover d-flex flex-column align-items-start">
             <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.high_warehouse|default:"-" }} ({{ card_high_low.transportation.high_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="high" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.high_warehouse|default:"-" }} ({{ card_high_low.transportation.high_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.high_account|default:"-" }} ({{ card_high_low.transportation.high_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="high" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.high_account|default:"-" }} ({{ card_high_low.transportation.high_account_value|default:0 }})</a>
             </div>
             <div>
               <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})</a>
+              <a href="#" class="js-select-warehouse" data-type="low" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})</a>
                – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="transportation" style="color:#444;">{{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})</a>
+              <a href="#" class="js-select-account" data-type="low" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})</a>
             </div>
           </div>
         </div>
