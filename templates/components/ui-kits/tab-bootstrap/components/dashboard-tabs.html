@@ -393,7 +393,7 @@
                 <li class="nav-item" role="presentation">
                   <button class="nav-link {% if active_tab == 'warehouse-overview' %}active{% endif %}" data-tab="warehouse-overview">Warehouse and Account Overview</button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <!-- <li class="nav-item" role="presentation">
                   <button class="nav-link {% if active_tab == 'all' %}active{% endif %}" data-tab="all">Aramco KPI</button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -404,7 +404,7 @@
                 </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link" data-tab="tamer-kpi">Tamer KPI</button>
-                </li>
+                </li> -->
                 {% for tab in excel_tabs %} {% if tab.display|lower != "all" %}
                 <li class="nav-item" role="presentation">
                   <button class="nav-link" data-tab="{{ tab.original }}">

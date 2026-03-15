@@ -3572,7 +3572,21 @@ class UploadExcelViewRoche(View):
                 seen_all_wh.add(w_name)
                 all_warehouse_names.append(w_name)
 
-        # كروت Capacity and Utilization: لكل مستودع — Utilization %، أعلى Account (اسم + عدد)، أقل Account (اسم + عدد)
+        # كروت Capacity and Utilization: لكل مستودع — Utilization %، أعلى Account، أقل Account، + ترند (اليوم/أمس/قبل أمس) للـ hover
+        yesterday_date = tz_today - timedelta(days=1)
+        day_before_yesterday_date = tz_today - timedelta(days=2)
+
+        def _util_for_warehouse_date(warehouse_name, dt):
+            q = WarehouseAccountOverview.objects.filter(warehouse=warehouse_name)
+            if dt is not None:
+                q = q.filter(created_at__date=dt)
+            grp = list(q.values("capacity", "occupied_location"))
+            if not grp:
+                return 0
+            cap = grp[0].get("capacity") or 0
+            total_occ = sum(x.get("occupied_location") or 0 for x in grp)
+            return int(round(total_occ / cap * 100)) if cap and cap > 0 else 0
+
         wh_rows = {}
         for r in rows:
             wh = str(r.get("warehouse") or "").strip()
@@ -3586,11 +3600,33 @@ class UploadExcelViewRoche(View):
             grp = wh_rows[wh]
             cap = grp[0].get("capacity") or 0
             total_occ = sum(x.get("occupied_location") or 0 for x in grp)
-            # النسبة في الكروت (والشارت) كعدد صحيح فقط
             util_pct = int(round(total_occ / cap * 100)) if cap and cap > 0 else 0
             sorted_by_occ = sorted(grp, key=lambda x: (x.get("occupied_location") or 0), reverse=True)
             high_acc = sorted_by_occ[0] if sorted_by_occ else {}
             low_acc = sorted_by_occ[-1] if sorted_by_occ else {}
+            # ترند Utilization % للـ hover: اليوم، أمس، قبل أمس — إحداثيات Y للشارت (5–35)
+            util_today = _util_for_warehouse_date(wh, tz_today)
+            util_yesterday = _util_for_warehouse_date(wh, yesterday_date)
+            util_day_before = _util_for_warehouse_date(wh, day_before_yesterday_date)
+            def _y_util(u):
+                return 35 - int(30 * min(100, max(0, u)) / 100)
+            y_t = _y_util(util_today)
+            y_y = _y_util(util_yesterday)
+            y_db = _y_util(util_day_before)
+            # شارت عمودي من تحت لفوق: viewBox 0 0 40 100، أسفل=90، أعلى=10
+            def _y_vert(y_old):
+                return 90 - int((y_old - 5) * 80 / 30)
+            y_t_v = _y_vert(y_t)
+            y_y_v = _y_vert(y_y)
+            y_db_v = _y_vert(y_db)
+            arrow_tip_y = max(6, y_t_v - 6)
+            arrow_base_y = y_t_v + 2
+            trend_util = {
+                "today": util_today, "yesterday": util_yesterday, "day_before": util_day_before,
+                "y_today": y_t, "y_yesterday": y_y, "y_day_before": y_db,
+                "y_day_before_vert": y_db_v, "y_yesterday_vert": y_y_v, "y_today_vert": y_t_v,
+                "arrow_x1": 14, "arrow_x2": 26, "arrow_tip_y": arrow_tip_y, "arrow_base_y": min(95, arrow_base_y),
+            }
             warehouse_capacity_cards.append({
                 "warehouse": wh,
                 "utilization_pct": util_pct,
@@ -3598,16 +3634,60 @@ class UploadExcelViewRoche(View):
                 "highest_account_count": high_acc.get("occupied_location") or 0,
                 "lowest_account_name": str(low_acc.get("account") or "").strip() or "—",
                 "lowest_account_count": low_acc.get("occupied_location") or 0,
+                "trend_util": trend_util,
             })
 
         # تواريخ اليوم/أمس/قبل أمس للعرض في الدروب داون
         yesterday_date = tz_today - timedelta(days=1)
         day_before_yesterday_date = tz_today - timedelta(days=2)
 
+        # ترند اليوم / أمس / قبل أمس لكل مقياس (نفس فلتر المستودع) — للـ hover
+        def _totals_for_date(dt):
+            q = WarehouseAccountOverview.objects.all()
+            if selected_warehouse:
+                q = q.filter(warehouse=selected_warehouse)
+            if dt is not None:
+                q = q.filter(created_at__date=dt)
+            a = q.aggregate(
+                total_clearance=Sum("clearance"),
+                total_inbound=Sum("inbound"),
+                total_outbound=Sum("outbound"),
+                total_transportation=Sum("transportation"),
+            )
+            return {
+                "clearance": a["total_clearance"] or 0,
+                "inbound": a["total_inbound"] or 0,
+                "outbound": a["total_outbound"] or 0,
+                "transportation": a["total_transportation"] or 0,
+            }
+
+        trend_today = _totals_for_date(tz_today)
+        trend_yesterday = _totals_for_date(yesterday_date)
+        trend_day_before = _totals_for_date(day_before_yesterday_date)
+
+        def _trend_metric(today_val, yesterday_val, day_before_val):
+            m = max(today_val, yesterday_val, day_before_val) or 1
+            # إحداثيات Y للـ line chart أفقي (يسار → يمين): viewBox عريض 100×40، قيمة أعلى = نقطة أعلى
+            def _y_hrz(val):
+                return 35 - int(30 * (val / m))  # 5–35 نطاق عمودي داخل ارتفاع 40
+            return {
+                "today": today_val, "yesterday": yesterday_val, "day_before": day_before_val,
+                "max": m,
+                "y_today": _y_hrz(today_val), "y_yesterday": _y_hrz(yesterday_val), "y_day_before": _y_hrz(day_before_val),
+            }
+
+        trend_totals = {
+            "clearance": _trend_metric(trend_today["clearance"], trend_yesterday["clearance"], trend_day_before["clearance"]),
+            "inbound": _trend_metric(trend_today["inbound"], trend_yesterday["inbound"], trend_day_before["inbound"]),
+            "outbound": _trend_metric(trend_today["outbound"], trend_yesterday["outbound"], trend_day_before["outbound"]),
+            "transportation": _trend_metric(trend_today["transportation"], trend_yesterday["transportation"], trend_day_before["transportation"]),
+        }
+
         html = render_to_string(
             "components/ui-kits/tab-bootstrap/components/warehouse-overview-tab.html",
             {
                 "totals": totals,
+                "trend_totals": trend_totals,
                 "table_rows": table_rows,
                 "warehouse_names": warehouse_names,
                 "account_names": account_names,

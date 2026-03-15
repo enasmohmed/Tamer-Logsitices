@@ -1,11 +1,10 @@
 {% load static %}
 <style>
-  /* باليت الصورة — درجات أزرق */
   .warehouse-theme-card {
     background: #FFFFFF !important;
     border-radius: 12px;
     border: 1px solid #E2E8F0;
-    box-shadow: 0 2px 10px rgb(0 0 0 / 78%);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 8%);
     transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   }
   .warehouse-theme-card:hover {
@@ -15,6 +14,12 @@
   }
   .warehouse-theme-card .card-body {
     padding: 1.1rem 1.25rem;
+  }
+  #warehouse-kpi-cards-row .warehouse-theme-card .card-body,
+  .warehouse-kpi-card .card-body {
+    padding: 1.25rem 1.4rem;
+    min-height: 200px;
+    position: relative;
   }
   .warehouse-card-title {
     font-size: 1.15rem;
@@ -49,7 +54,7 @@
   .warehouse-card .card-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #fff;
+    color: #1E293B;
   }
   .warehouse-table-wrap {
     max-height: 520px;
@@ -112,9 +117,118 @@
     background-color: #CFE1F7;
     color: #2F6EC2;
   }
+
+  /* الخمسة كروت جنب بعض (ممتدة بعرض الديف بدون اي مسافة يمين ويسار) */
+  .warehouse-kpi-cards-row {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    flex-wrap: nowrap;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  .warehouse-kpi-card-col {
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: 20%;
+    display: flex;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 1200px) {
+    .warehouse-kpi-cards-row {
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .warehouse-kpi-card-col {
+      max-width: 50%;
+      flex-basis: 50%;
+    }
+  }
+  @media (max-width: 900px) {
+    .warehouse-kpi-cards-row {
+      flex-direction: column;
+      max-width: 100%;
+      gap: 0;
+    }
+    .warehouse-kpi-card-col {
+      max-width: 100%;
+      flex-basis: 100%;
+    }
+  }
+
   .warehouse-kpi-card {
     cursor: pointer;
     overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.3s ease;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0; /* يلغي اي زاويا من الكاردز */
+  }
+  .warehouse-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(74, 144, 226, 0.22);
+  }
+  /* إزالة الحدود يسار ويمين بين الكاردز حتى يكونو متصلين */
+  .warehouse-kpi-card:not(:last-child) {
+    border-right: 1px solid #E2E8F0;
+  }
+  .warehouse-kpi-card:not(:first-child) {
+    border-left: none;
+  }
+  .warehouse-kpi-card-hint {
+    font-size: 0.75rem;
+    color: rgba(30,41,59,0.8);
+    margin-top: 6px;
+    text-align: center;
+    transition: opacity 0.25s ease;
+  }
+  .warehouse-kpi-card:hover .warehouse-kpi-card-hint {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .warehouse-kpi-card-details {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    padding: 1rem 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.75) 0%, rgba(30, 41, 59, 0.95) 100%);
+    border-radius: 12px 12px 0 0;
+    backdrop-filter: blur(8px);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.3s ease;
+    max-height: 85%;
+    overflow-y: auto;
+  }
+  .warehouse-kpi-card:hover .warehouse-kpi-card-details {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .warehouse-kpi-card-details .warehouse-trend-chart {
+    margin-bottom: 10px;
+  }
+  .warehouse-kpi-card-details .warehouse-trend-title {
+    color: #E2E8F0;
+  }
+  .warehouse-kpi-card-details .warehouse-trend-labels span {
+    background: rgba(255,255,255,0.1);
+  }
+  .warehouse-kpi-card-details strong {
+    color: #fff;
+  }
+  .warehouse-kpi-card-details ul {
+    color: #CBD5E1;
+    font-size: 0.8rem;
   }
   .warehouse-kpi-card .card-high-low {
     font-size: 0.8rem;
@@ -130,7 +244,6 @@
     color: #fff;
     line-height: 1.4;
   }
-  /* الـ hover يظهر على الكارد اللي فوقه فقط، والمحتوى يبقى داخل الكارد */
   .warehouse-kpi-card:hover .card-high-low-hover {
     display: flex !important;
     position: absolute;
@@ -143,14 +256,163 @@
     background: rgba(79, 112, 165, 0.92);
     border-radius: 0 0 12px 12px;
   }
+  .warehouse-trend-chart {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .warehouse-trend-chart .warehouse-trend-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .warehouse-trend-line-wrap {
+    width: 100%;
+    height: 72px;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+  .warehouse-trend-line-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+  .warehouse-trend-line-wrap .trend-line {
+    fill: none;
+    stroke: #CFE1F7;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.2s ease;
+  }
+  .warehouse-kpi-card:hover .warehouse-trend-line-wrap .trend-line {
+    stroke: #fff;
+  }
+  .warehouse-trend-line-wrap .trend-point {
+    fill: #4A90E2;
+    stroke: #fff;
+    stroke-width: 2;
+    transition: fill 0.2s ease;
+  }
+  .warehouse-kpi-card:hover .warehouse-trend-line-wrap .trend-point {
+    fill: #7BA8ED;
+  }
+  .warehouse-trend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #CBD5E1;
+    gap: 8px;
+  }
+  .warehouse-trend-labels span {
+    flex: 1;
+    text-align: center;
+    padding: 4px 2px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 6px;
+  }
+  .warehouse-trend-labels span strong {
+    display: block;
+    color: #fff;
+    font-size: 0.9rem;
+    margin-top: 2px;
+  }
   #warehouse-data-table tbody tr.warehouse-row-highlight td {
     background-color: rgba(74, 144, 226, 0.2) !important;
   }
   .wh-capacity-card .wh-util-count { color: #2F6EC2; }
+  .wh-capacity-card {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.3s ease;
+  }
+  .wh-capacity-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(74, 144, 226, 0.2);
+  }
+  .wh-capacity-card-hint {
+    font-size: 0.7rem;
+    color: #94A3B8;
+    margin-top: 4px;
+    transition: opacity 0.25s ease;
+  }
+  .wh-capacity-card:hover .wh-capacity-card-hint { opacity: 0; pointer-events: none; }
+  .wh-capacity-card-details {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    top: 35%;
+    z-index: 2;
+    padding: 1rem 1.25rem 1.25rem;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.88) 0%, rgba(30, 41, 59, 0.98) 100%);
+    border-radius: 18px 18px 0 0;
+    backdrop-filter: blur(8px);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: transform 0.35s ease, opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .wh-capacity-card:hover .wh-capacity-card-details {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .wh-capacity-card-details .wh-trend-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .wh-capacity-card-details .wh-trend-line-wrap {
+    height: 72px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 10px;
+  }
+  .wh-capacity-card-details .wh-trend-line-wrap svg { width: 100%; height: 100%; display: block; }
+  .wh-capacity-card-details .wh-trend-line {
+    fill: none;
+    stroke: #CFE1F7;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .wh-capacity-card-details .wh-trend-point {
+    fill: #4A90E2;
+    stroke: #fff;
+    stroke-width: 2;
+  }
+  .wh-capacity-card-details .wh-trend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #CBD5E1;
+    gap: 8px;
+  }
+  .wh-capacity-card-details .wh-trend-labels span {
+    flex: 1;
+    text-align: center;
+    padding: 4px 2px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 6px;
+  }
+  .wh-capacity-card-details .wh-trend-labels strong { display: block; color: #fff; font-size: 0.9rem; margin-top: 2px; }
   #warehouse-data-table tbody tr.warehouse-row-highlight td.warehouse-cell {
     background-color: rgba(74, 144, 226, 0.25) !important;
   }
-  /* شريط التقدم لعمود Utilization % */
+
   .warehouse-util-cell {
     display: flex;
     align-items: center;
@@ -180,7 +442,7 @@
 </style>
 <div class="warehouse-overview-tab">
   <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
-    <h4 class="mb-0">Warehouse and Account Overview</h4>
+    <h4 class="mb-0">Operations overview</h4>
     <div class="d-flex align-items-center gap-3 flex-wrap">
       <div class="d-flex align-items-center gap-2">
         <label for="warehouse-wh-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">WHs</label>
@@ -196,13 +458,13 @@
         <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 140px; border-color: #4A90E2;">
           <option value="">All</option>
           <option value="today" {% if selected_day == "today" %}selected{% endif %}>
-            Today ({{ today_date|date:"Y-m-d" }})
+             ({{ today_date|date:"Y-m-d" }})
           </option>
           <option value="yesterday" {% if selected_day == "yesterday" %}selected{% endif %}>
-            Yesterday ({{ yesterday_date|date:"Y-m-d" }})
+             ({{ yesterday_date|date:"Y-m-d" }})
           </option>
           <option value="day_before_yesterday" {% if selected_day == "day_before_yesterday" %}selected{% endif %}>
-            Day Before Yesterday ({{ day_before_yesterday_date|date:"Y-m-d" }})
+             ({{ day_before_yesterday_date|date:"Y-m-d" }})
           </option>
         </select>
       </div>
@@ -212,9 +474,9 @@
   <!-- بيانات أعلى/أقل Warehouse و Account لكل مقياس (للاستخدام في JS عند الضغط) -->
   {{ card_high_low|json_script:"warehouse-card-high-low" }}
 
-  <!-- ٤ كروت: Clearance، Inbound، Outbound، Transportation — Highest/Lowest Warehouse – Account مع الأعداد، الضغط يحدد صفوف المستودع والحساب -->
-  <div class="row g-3 mb-4" id="warehouse-kpi-cards-row">
-    <div class="col">
+  <!-- الخمسة كروت جنب بعض -->
+  <div class="warehouse-kpi-cards-row mb-4" id="warehouse-kpi-cards-row">
+    <div class="warehouse-kpi-card-col">
       <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="clearance" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Clearance</h6>
@@ -224,23 +486,49 @@
             </div>
             <span class="card-value">{% if totals.total_clearance %}{{ totals.total_clearance }}{% else %}No Data{% endif %}</span>
           </div>
-          <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.high_warehouse|default:"-" }} ({{ card_high_low.clearance.high_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.high_account|default:"-" }} ({{ card_high_low.clearance.high_account_value|default:0 }})</a>
-            </div>
-            <div>
-              <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="clearance" style="color:#cfe1f7;">{{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})</a>
+          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
+          <div class="card-high-low" style="display: block;">
+            <strong>Highest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.clearance.high_warehouse|default:"-" }} ({{ card_high_low.clearance.high_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.clearance.high_account|default:"-" }} ({{ card_high_low.clearance.high_account_value|default:0 }})
+              </li>
+            </ul>
+            <strong>Lowest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})
+              </li>
+            </ul>
+          </div>
+          <div class="warehouse-kpi-card-details">
+            <div class="warehouse-trend-chart">
+              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
+              <div class="warehouse-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="trend-line" points="10,{{ trend_totals.clearance.y_day_before }} 50,{{ trend_totals.clearance.y_yesterday }} 90,{{ trend_totals.clearance.y_today }}"/>
+                  <circle class="trend-point" cx="10" cy="{{ trend_totals.clearance.y_day_before }}" r="4"/>
+                  <circle class="trend-point" cx="50" cy="{{ trend_totals.clearance.y_yesterday }}" r="4"/>
+                  <circle class="trend-point" cx="90" cy="{{ trend_totals.clearance.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="warehouse-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.clearance.day_before }}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.clearance.yesterday }}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.clearance.today }}</strong></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="col">
+    <div class="warehouse-kpi-card-col">
       <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="inbound" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Inbound</h6>
@@ -250,23 +538,49 @@
             </div>
             <span class="card-value">{% if totals.total_inbound %}{{ totals.total_inbound }}{% else %}No Data{% endif %}</span>
           </div>
-          <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.high_warehouse|default:"-" }} ({{ card_high_low.inbound.high_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.high_account|default:"-" }} ({{ card_high_low.inbound.high_account_value|default:0 }})</a>
-            </div>
-            <div>
-              <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="inbound" style="color:#cfe1f7;">{{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})</a>
+          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
+          <div class="card-high-low" style="display: block;">
+            <strong>Highest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.inbound.high_warehouse|default:"-" }} ({{ card_high_low.inbound.high_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.inbound.high_account|default:"-" }} ({{ card_high_low.inbound.high_account_value|default:0 }})
+              </li>
+            </ul>
+            <strong>Lowest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})
+              </li>
+            </ul>
+          </div>
+          <div class="warehouse-kpi-card-details">
+            <div class="warehouse-trend-chart">
+              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
+              <div class="warehouse-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="trend-line" points="10,{{ trend_totals.inbound.y_day_before }} 50,{{ trend_totals.inbound.y_yesterday }} 90,{{ trend_totals.inbound.y_today }}"/>
+                  <circle class="trend-point" cx="10" cy="{{ trend_totals.inbound.y_day_before }}" r="4"/>
+                  <circle class="trend-point" cx="50" cy="{{ trend_totals.inbound.y_yesterday }}" r="4"/>
+                  <circle class="trend-point" cx="90" cy="{{ trend_totals.inbound.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="warehouse-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.inbound.day_before }}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.inbound.yesterday }}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.inbound.today }}</strong></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="col">
+    <div class="warehouse-kpi-card-col">
       <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="outbound" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Outbound</h6>
@@ -276,23 +590,49 @@
             </div>
             <span class="card-value">{% if totals.total_outbound %}{{ totals.total_outbound }}{% else %}No Data{% endif %}</span>
           </div>
-          <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.high_warehouse|default:"-" }} ({{ card_high_low.outbound.high_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.high_account|default:"-" }} ({{ card_high_low.outbound.high_account_value|default:0 }})</a>
-            </div>
-            <div>
-              <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="outbound" style="color:#cfe1f7;">{{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})</a>
+          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
+          <div class="card-high-low" style="display: block;">
+            <strong>Highest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.outbound.high_warehouse|default:"-" }} ({{ card_high_low.outbound.high_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.outbound.high_account|default:"-" }} ({{ card_high_low.outbound.high_account_value|default:0 }})
+              </li>
+            </ul>
+            <strong>Lowest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})
+              </li>
+            </ul>
+          </div>
+          <div class="warehouse-kpi-card-details">
+            <div class="warehouse-trend-chart">
+              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
+              <div class="warehouse-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="trend-line" points="10,{{ trend_totals.outbound.y_day_before }} 50,{{ trend_totals.outbound.y_yesterday }} 90,{{ trend_totals.outbound.y_today }}"/>
+                  <circle class="trend-point" cx="10" cy="{{ trend_totals.outbound.y_day_before }}" r="4"/>
+                  <circle class="trend-point" cx="50" cy="{{ trend_totals.outbound.y_yesterday }}" r="4"/>
+                  <circle class="trend-point" cx="90" cy="{{ trend_totals.outbound.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="warehouse-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.outbound.day_before }}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.outbound.yesterday }}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.outbound.today }}</strong></span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="col">
+    <div class="warehouse-kpi-card-col">
       <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="transportation" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
         <div class="card-body">
           <h6 class="warehouse-card-title">Total Transportation</h6>
@@ -302,17 +642,98 @@
             </div>
             <span class="card-value">{% if totals.total_transportation %}{{ totals.total_transportation }}{% else %}No Data{% endif %}</span>
           </div>
-          <div class="card-high-low-hover d-flex flex-column align-items-start">
-            <div style="margin-bottom: 4px;"><strong>Highest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="high" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.high_warehouse|default:"-" }} ({{ card_high_low.transportation.high_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="high" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.high_account|default:"-" }} ({{ card_high_low.transportation.high_account_value|default:0 }})</a>
+          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
+          <div class="card-high-low" style="display: block;">
+            <strong>Highest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.transportation.high_warehouse|default:"-" }} ({{ card_high_low.transportation.high_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.transportation.high_account|default:"-" }} ({{ card_high_low.transportation.high_account_value|default:0 }})
+              </li>
+            </ul>
+            <strong>Lowest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})
+              </li>
+            </ul>
+          </div>
+          <div class="warehouse-kpi-card-details">
+            <div class="warehouse-trend-chart">
+              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
+              <div class="warehouse-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="trend-line" points="10,{{ trend_totals.transportation.y_day_before }} 50,{{ trend_totals.transportation.y_yesterday }} 90,{{ trend_totals.transportation.y_today }}"/>
+                  <circle class="trend-point" cx="10" cy="{{ trend_totals.transportation.y_day_before }}" r="4"/>
+                  <circle class="trend-point" cx="50" cy="{{ trend_totals.transportation.y_yesterday }}" r="4"/>
+                  <circle class="trend-point" cx="90" cy="{{ trend_totals.transportation.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="warehouse-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.day_before }}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.yesterday }}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.today }}</strong></span>
+              </div>
             </div>
-            <div>
-              <strong>Lowest Warehouse – Account:</strong> <br>
-              <a href="#" class="js-select-warehouse" data-type="low" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})</a>
-               – 
-              <a href="#" class="js-select-account" data-type="low" data-metric="transportation" style="color:#cfe1f7;">{{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="warehouse-kpi-card-col">
+      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="pods" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
+        <div class="card-body">
+          <h6 class="warehouse-card-title">Total PODs</h6>
+          <div class="warehouse-card">
+            <div class="card-icon">
+              <!-- PODs Icon (Document style) -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 1.5A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.707a1.5 1.5 0 0 0-.44-1.06l-3.707-3.706A1.5 1.5 0 0 0 9.293 1.5H4zm5 .707V5a1 1 0 0 0 1 1h2.793L9 2.207z"/>
+              </svg>
+            </div>
+            <span class="card-value">{% if totals.total_pods %}{{ totals.total_pods }}{% else %}No Data{% endif %}</span>
+          </div>
+          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
+          <div class="card-high-low" style="display: block;">
+            <strong>Highest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.pods.high_warehouse|default:"-" }} ({{ card_high_low.pods.high_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.pods.high_account|default:"-" }} ({{ card_high_low.pods.high_account_value|default:0 }})
+              </li>
+            </ul>
+            <strong>Lowest Warehouse – Account:</strong>
+            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
+              <li>
+                {{ card_high_low.pods.low_warehouse|default:"-" }} ({{ card_high_low.pods.low_warehouse_value|default:0 }})
+              </li>
+              <li>
+                {{ card_high_low.pods.low_account|default:"-" }} ({{ card_high_low.pods.low_account_value|default:0 }})
+              </li>
+            </ul>
+          </div>
+          <div class="warehouse-kpi-card-details">
+            <div class="warehouse-trend-chart">
+              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
+              <div class="warehouse-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="trend-line" points="10,{{ trend_totals.pods.y_day_before }} 50,{{ trend_totals.pods.y_yesterday }} 90,{{ trend_totals.pods.y_today }}"/>
+                  <circle class="trend-point" cx="10" cy="{{ trend_totals.pods.y_day_before }}" r="4"/>
+                  <circle class="trend-point" cx="50" cy="{{ trend_totals.pods.y_yesterday }}" r="4"/>
+                  <circle class="trend-point" cx="90" cy="{{ trend_totals.pods.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="warehouse-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.day_before }}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.yesterday }}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.today }}</strong></span>
+              </div>
             </div>
           </div>
         </div>
@@ -386,7 +807,6 @@
       text-decoration: underline;
       cursor: pointer;
     }
-    /* تمييز صفوف المستودع المختار */
     #warehouse-data-table tbody tr.warehouse-row-special-highlight td,
     #warehouse-data-table tbody tr.warehouse-row-special-highlight td.warehouse-cell {
       background-color: #fff !important;
@@ -398,7 +818,6 @@
       z-index: 2;
       position: relative;
     }
-    /* تمييز صفوف الحساب المختار */
     #warehouse-data-table tbody tr.account-row-special-highlight td,
     #warehouse-data-table tbody tr.account-row-special-highlight td.warehouse-cell {
       background-color: #fff !important;
@@ -412,7 +831,7 @@
     }
   </style>
 
-  <!-- Capacity and Utilization: كارد لكل مستودع — Utilization % + Highest/Lowest Account -->
+  <!-- Capacity and Utilization: كارد لكل مستودع — Utilization % + Highest/Lowest Account (unchanged) -->
   <div class="mb-4" id="warehouse-capacity-util-section">
     <h4 class="mb-3" style="color: #1E293B; font-weight: 800; letter-spacing: 1px;">Capacity and Utilization</h4>
     <div class="row g-4" id="warehouse-capacity-cards-row">
@@ -441,6 +860,23 @@
                   <div class="fw-semibold" style="color: #1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.lowest_account_name }}</div>
                   <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #2F6EC2;">{{ card.lowest_account_count }}</span>
                 </div>
+              </div>
+            </div>
+            <p class="wh-capacity-card-hint mb-0">Hover for utilization trend</p>
+            <div class="wh-capacity-card-details">
+              <div class="wh-trend-title">{{ card.warehouse }}</div>
+              <div class="wh-trend-line-wrap">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
+                  <polyline class="wh-trend-line" points="10,{{ card.trend_util.y_day_before }} 50,{{ card.trend_util.y_yesterday }} 90,{{ card.trend_util.y_today }}"/>
+                  <circle class="wh-trend-point" cx="10" cy="{{ card.trend_util.y_day_before }}" r="4"/>
+                  <circle class="wh-trend-point" cx="50" cy="{{ card.trend_util.y_yesterday }}" r="4"/>
+                  <circle class="wh-trend-point" cx="90" cy="{{ card.trend_util.y_today }}" r="4"/>
+                </svg>
+              </div>
+              <div class="wh-trend-labels">
+                <span>{{ day_before_yesterday_date|date:"d M" }} <strong>{{ card.trend_util.day_before }}%</strong></span>
+                <span>{{ yesterday_date|date:"d M" }} <strong>{{ card.trend_util.yesterday }}%</strong></span>
+                <span>{{ today_date|date:"d M" }} <strong>{{ card.trend_util.today }}%</strong></span>
               </div>
             </div>
           </div>
@@ -498,10 +934,13 @@
   })();
   </script>
 
-  <!-- جدول البيانات: فلتران Warehouse + Account ثم جدول -->
+  <!-- جدول البيانات: فلتران Warehouse + Account ثم جدول (unchanged) -->
   <div class="card shadow-sm" id="warehouse-data-table-section" style="border: 1px solid #E2E8F0;">
-    <div class="card-header d-flex align-items-center" style="background: #CFE1F7; color: #1E293B;">
-      <strong>Data by Warehouse & Account</strong>
+    <div class="card-header d-flex flex-column align-items-start" style="background: #CFE1F7; color: #1E293B;">
+      <strong>Operations overview</strong>
+      <p class="mb-0 mt-2 small text-muted" style="font-size: 0.85rem; color: #475569 !important; font-weight: normal;">
+        <strong>Note:</strong> Inbound = Total pallets received | Outbound = Beer cases shipped | Transportation = Total trucks | PODs = Number of PODs submitted | Utilization = Warehouse space used.
+      </p>
     </div>
     <div class="px-3 pt-3 pb-2 border-bottom" style="background: #eaf2fb45; border-color: #E2E8F0 !important;">
       <div class="row g-2 align-items-center">
@@ -570,7 +1009,7 @@
           </tr>
           {% empty %}
           <tr class="warehouse-empty-row">
-            <td colspan="9" class="text-muted py-4">No data. Upload Excel from Admin (Warehouse and Account Overview → استيراد من Excel).</td>
+            <td colspan="9" class="text-muted py-4">No data available. Please upload an Excel file from the admin panel (Warehouse and Account Overview → Import from Excel).</td>
           </tr>
           {% endfor %}
           {% if table_rows %}
