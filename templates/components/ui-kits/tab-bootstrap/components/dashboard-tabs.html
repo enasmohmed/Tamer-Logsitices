@@ -150,6 +150,14 @@
     font-size: 14px;
   }
 
+  /* Ensure upload code modals sit above all dashboard layers */
+  .modal-backdrop.show {
+    z-index: -3000 !important;
+  }
+  .modal.show {
+    z-index: 3010 !important;
+  }
+
   .custom-select {
     padding: 6px 10px;
     border: 1.5px solid #4A90E2;
