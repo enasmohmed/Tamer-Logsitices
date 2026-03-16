@@ -41,7 +41,9 @@ class WarehouseDayFilter(admin.SimpleListFilter):
         dates = _warehouse_available_dates()
         dates_set = {d for d in dates}
         last_import = _warehouse_last_import_date()
-        last_data_date = (last_import if last_import and last_import in dates_set else None) or (dates[0] if dates else timezone.now().date())
+        last_data_date = (last_import if last_import and last_import in dates_set else None) or (
+            dates[0] if dates else timezone.now().date()
+        )
         if value is None:
             target_date = last_data_date
         else:
@@ -151,15 +153,17 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
         except ValueError:
             selected_date = last_data_date
         # إعادة توجيه عند عدم وجود day لضبط الفلتر على تاريخ آخر رفع إكسل (أو آخر تاريخ فيه داتا)
-        if not day_param and (last_import or dates):
+        # ملاحظة: لا نعمل إعادة توجيه إذا لم يكن هناك أي تواريخ بيانات (لتجنّب حلقة redirect لا نهائية).
+        if not day_param and dates:
             from django.http import HttpResponseRedirect
             from urllib.parse import urlencode
             q = request.GET.copy()
             q["day"] = last_data_date.strftime("%Y-%m-%d")
             return HttpResponseRedirect(request.path + "?" + q.urlencode())
         # لو التاريخ المختار مش في القائمة نوجّه لآخر رفع (أو آخر تاريخ فيه داتا)
+        # بشرط أن تكون هناك تواريخ متاحة فعلاً، وإلا نعرض القائمة كما هي بدون redirect.
         available_set = {d for d in dates}
-        if selected_date not in available_set and (last_import or dates):
+        if dates and selected_date not in available_set:
             from django.http import HttpResponseRedirect
             from urllib.parse import urlencode
             q = request.GET.copy()
