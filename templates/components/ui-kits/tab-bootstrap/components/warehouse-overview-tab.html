@@ -455,17 +455,12 @@
       </div>
       <div class="d-flex align-items-center gap-2">
         <label for="warehouse-day-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">Day</label>
-        <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 140px; border-color: #4A90E2;">
-          <option value="">All</option>
-          <option value="today" {% if selected_day == "today" %}selected{% endif %}>
-             ({{ today_date|date:"Y-m-d" }})
-          </option>
-          <option value="yesterday" {% if selected_day == "yesterday" %}selected{% endif %}>
-             ({{ yesterday_date|date:"Y-m-d" }})
-          </option>
-          <option value="day_before_yesterday" {% if selected_day == "day_before_yesterday" %}selected{% endif %}>
-             ({{ day_before_yesterday_date|date:"Y-m-d" }})
-          </option>
+        <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 160px; border-color: #4A90E2;">
+          {% for date in available_dates %}
+          <option value="{{ date|date:'Y-m-d' }}" {% if selected_date == date %}selected{% endif %}>{{ date|date:"d M Y" }}</option>
+          {% empty %}
+          <option value="{{ selected_date|date:'Y-m-d' }}" selected>{{ selected_date|date:"d M Y" }}</option>
+          {% endfor %}
         </select>
       </div>
     </div>

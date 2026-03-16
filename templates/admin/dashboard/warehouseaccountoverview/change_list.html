@@ -6,30 +6,45 @@
   <a href="{% url 'admin:dashboard_warehouseaccountoverview_import' %}" class="addlink">
     📥 Import from Excel (Da-tamer.xlsx / Sheet1)
   </a>
+  {% if warehouse_selected_date and warehouse_available_dates %}
+  <a href="{% url 'admin:dashboard_warehouseaccountoverview_delete_day' %}?day={{ warehouse_selected_date|date:'Y-m-d' }}" class="deletelink" style="margin-left: 8px;" title="Delete all data for this day">
+    🗑️ Delete data for this day ({{ warehouse_selected_date|date:"d M Y" }})
+  </a>
+  {% endif %}
 
-  <form method="get" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0;">
-    {# نحافظ على باقي بارامترات الاستعلام (بحث، ترتيب، إلخ) #}
+  <form method="get" id="warehouse-changelist-filter-form" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0;">
+    {# لا نرسل warehouse__exact عند "All" وإلا الأدمن يفلتر بـ warehouse="" فيرجع 0 نتائج #}
+    <script>
+    (function() {
+      var form = document.getElementById('warehouse-changelist-filter-form');
+      if (form) {
+        form.addEventListener('submit', function() {
+          var wh = document.getElementById('changelist-warehouse-filter');
+          if (wh && wh.value === '') wh.removeAttribute('name');
+        });
+      }
+    })();
+    </script>
     {% for key, value in request.GET.items %}
-      {% if key != "day" and key != "warehouse__exact" %}
+      {% if key != "day" and key != "warehouse__exact" and key != "created_at__gte" and key != "created_at__lte" and key != "created_at__date__gte" and key != "created_at__date__lte" %}
         <input type="hidden" name="{{ key }}" value="{{ value }}">
       {% endif %}
     {% endfor %}
 
     <label for="changelist-day-filter" style="font-weight:bold;">Day:</label>
     <select id="changelist-day-filter" name="day" onchange="this.form.submit();">
-      <option value="">All</option>
-      <option value="today" {% if request.GET.day == "today" or not request.GET.day %}selected{% endif %}>Today</option>
-      <option value="yesterday" {% if request.GET.day == "yesterday" %}selected{% endif %}>Yesterday</option>
-      <option value="day_before_yesterday" {% if request.GET.day == "day_before_yesterday" %}selected{% endif %}>Day Before Yesterday</option>
+      {% for date in warehouse_available_dates %}
+        <option value="{{ date|date:'Y-m-d' }}" {% if warehouse_selected_date == date %}selected{% endif %}>{{ date|date:"d M Y" }}</option>
+      {% empty %}
+        <option value="{{ warehouse_selected_date|date:'Y-m-d' }}" selected>{{ warehouse_selected_date|date:"d M Y" }}</option>
+      {% endfor %}
     </select>
 
     <label for="changelist-warehouse-filter" style="font-weight:bold;">By Warehouse:</label>
     <select id="changelist-warehouse-filter" name="warehouse__exact" onchange="this.form.submit();">
       <option value="">All</option>
-      {% for obj in cl.queryset %}
-        {% if obj.warehouse %}
-          <option value="{{ obj.warehouse }}" {% if request.GET.warehouse__exact == obj.warehouse %}selected{% endif %}>{{ obj.warehouse }}</option>
-        {% endif %}
+      {% for wh in warehouse_choices %}
+        <option value="{{ wh }}" {% if request.GET.warehouse__exact == wh %}selected{% endif %}>{{ wh }}</option>
       {% endfor %}
     </select>
   </form>

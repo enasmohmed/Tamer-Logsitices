@@ -29,7 +29,7 @@ from django.utils.decorators import method_decorator
 from django.utils.text import slugify
 from django.utils import timezone
 
-from .models import MeetingPoint, InboundShipmentRemark, ExcelSheetCache, DashboardDataCache, WarehouseAccountOverview, CapacityVolume
+from .models import MeetingPoint, InboundShipmentRemark, ExcelSheetCache, DashboardDataCache, WarehouseAccountOverview, CapacityVolume, WarehouseImportLog
 
 
 def make_json_serializable(df):
@@ -3378,32 +3378,65 @@ class UploadExcelViewRoche(View):
         الداتا من موديل WarehouseAccountOverview (الأدمن يرفع Excel من لوحة التحكم).
         فلتر اختياري: wh = اسم المستودع. day = today|yesterday يعرض بيانات رُفعت في ذلك اليوم فقط (حسب created_at).
         """
-        from datetime import timedelta
+        from datetime import datetime as _dt, timedelta
         from django.db.models import Sum, Q
         wh_filter = (request.GET.get("wh") or request.GET.get("warehouse") or "").strip()
         selected_warehouse = wh_filter if wh_filter else None
 
-        # فلتر الأيام: الافتراضي "اليوم"، مع دعم اليوم/أمس/قبل أمس
-        raw_day = (request.GET.get("day") or "").strip().lower()
+        # قائمة التواريخ من التايمزون المحلي فقط (نفس منطق الأدمن) — لو حذفت يوم من الأدمن يختفي من الدروب دون
         tz_today = timezone.now().date()
+        tz = timezone.get_current_timezone()
+        from django.db.models.functions import TruncDate
+        available_dates = list(
+            WarehouseAccountOverview.objects.annotate(
+                day_date=TruncDate("created_at", tz=tz)
+            )
+            .values_list("day_date", flat=True)
+            .distinct()
+            .order_by("-day_date")
+        )
+        available_dates_set = {d for d in available_dates}
+        last_import = WarehouseImportLog.objects.order_by("-imported_at").first()
+        last_import_date = last_import.effective_date if last_import else None
+        last_data_date = (last_import_date if last_import_date and last_import_date in available_dates_set else None) or (available_dates[0] if available_dates else tz_today)
+
+        raw_day = (request.GET.get("day") or "").strip()
+        raw_day_lower = raw_day.lower()
         valid_days = {"today", "yesterday", "day_before_yesterday"}
-        day_filter = raw_day if raw_day in valid_days else "today"
+        date_filter = None
+        selected_day_value = raw_day
 
-        if day_filter == "today":
-            date_filter = tz_today
-        elif day_filter == "yesterday":
-            date_filter = tz_today - timedelta(days=1)
-        elif day_filter == "day_before_yesterday":
-            date_filter = tz_today - timedelta(days=2)
-        else:
-            date_filter = None
+        if raw_day_lower in valid_days:
+            if raw_day_lower == "today":
+                date_filter = tz_today
+            elif raw_day_lower == "yesterday":
+                date_filter = tz_today - timedelta(days=1)
+            else:
+                date_filter = tz_today - timedelta(days=2)
+            selected_day_value = raw_day_lower
+        elif raw_day:
+            try:
+                date_filter = _dt.strptime(raw_day, "%Y-%m-%d").date()
+                selected_day_value = raw_day
+            except ValueError:
+                pass
+        if date_filter is None:
+            date_filter = last_data_date
+            selected_day_value = last_data_date.strftime("%Y-%m-%d")
+        # لو التاريخ المختار محذوف (مش في available_dates) نعرض آخر تاريخ فيه داتا بدل ما نعرض فاضي
+        if date_filter not in available_dates_set and available_dates:
+            date_filter = last_data_date
+            selected_day_value = last_data_date.strftime("%Y-%m-%d")
 
-        # نحافظ على ترتيب الإكسل (ترتيب الإدخال في الداتابيز)
+        # فلتر باليوم بنفس نطاق التايمزون المستخدم في الأدمن (حتى النتائج متطابقة بعد الحذف)
+        tz = timezone.get_current_timezone()
+        start = timezone.make_aware(_dt.combine(date_filter, _dt.min.time()), tz)
+        end = start + timedelta(days=1)
+
         qs = WarehouseAccountOverview.objects.all()
         if selected_warehouse:
             qs = qs.filter(warehouse=selected_warehouse)
-        if date_filter is not None:
-            qs = qs.filter(created_at__date=date_filter)
+        qs = qs.filter(created_at__gte=start, created_at__lt=end)
         raw_rows = list(
             qs.values(
                 "warehouse", "account", "capacity", "clearance", "inbound", "outbound",
@@ -3693,7 +3726,9 @@ class UploadExcelViewRoche(View):
                 "account_names": account_names,
                 "selected_warehouse": selected_warehouse,
                 "all_warehouse_names": all_warehouse_names,
-                "selected_day": day_filter or "",
+                "selected_day": selected_day_value,
+                "selected_date": date_filter,
+                "available_dates": available_dates,
                 "today_date": tz_today,
                 "yesterday_date": yesterday_date,
                 "day_before_yesterday_date": day_before_yesterday_date,

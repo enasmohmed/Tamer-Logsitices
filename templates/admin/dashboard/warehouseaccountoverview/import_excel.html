@@ -13,25 +13,25 @@
 
 {% block content %}
 <h1>{{ title }}</h1>
-<p>ارفع ملف Excel (مثل <strong>Warehouse.xlsx</strong>) يحتوي على شيت <strong>Da-tamer</strong> (بيانات الجدول) واختياريًا شيت <strong>Capacity-volume</strong> (لشارت السعة). إذا لم تحدد اسم شيت، سيُستورد تلقائيًا شيت Da-tamer إن وُجد وإلا Sheet1. سيتم استبدال كل البيانات الحالية.</p>
+<p>Upload an Excel file (e.g. <strong>Warehouse.xlsx</strong>) containing the <strong>Da-tamer</strong> sheet (table data) and optionally the <strong>Capacity-volume</strong> sheet (for capacity chart). If you don't specify a sheet name, Da-tamer will be used if present, otherwise Sheet1. Existing data for the chosen date will be replaced.</p>
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
   <div class="form-row">
-    <label for="id_sheet_name">اسم شيت الجدول (اختياري، افتراضي Da-tamer أو Sheet1):</label>
-    <input type="text" name="sheet_name" id="id_sheet_name" value="" placeholder="اتركه فارغًا للاكتشاف التلقائي" maxlength="100" style="width: 280px;">
+    <label for="id_sheet_name">Sheet name (optional, default Da-tamer or Sheet1):</label>
+    <input type="text" name="sheet_name" id="id_sheet_name" value="" placeholder="Leave empty for auto-detect" maxlength="100" style="width: 280px;">
   </div>
   <div class="form-row" style="margin-top: 12px;">
-    <label for="id_effective_date">تاريخ البيانات (اليوم / أمس / أي تاريخ قديم):</label>
+    <label for="id_effective_date">Data date (today / yesterday / any past date):</label>
     <input type="date" name="effective_date" id="id_effective_date" value="{{ default_effective_date|default_if_none:'' }}">
-    <p class="help">سيتم حفظ كل الصفوف بهذا التاريخ في حقل created_at، ويمكنك بعد ذلك الفلترة في صفحة الأدمن بهذا التاريخ.</p>
+    <p class="help">All rows will be saved with this date in created_at; you can then filter by this date in the admin list.</p>
   </div>
   <div class="form-row" style="margin-top: 12px;">
-    <label for="id_excel_file">ملف Excel:</label>
+    <label for="id_excel_file">Excel file:</label>
     <input type="file" name="excel_file" id="id_excel_file" accept=".xlsx,.xls" required>
   </div>
   <div class="submit-row" style="margin-top: 16px;">
-    <input type="submit" value="استيراد" class="default">
-    <a href="{% url 'admin:dashboard_warehouseaccountoverview_changelist' %}" class="button default">إلغاء</a>
+    <input type="submit" value="Import" class="default">
+    <a href="{% url 'admin:dashboard_warehouseaccountoverview_changelist' %}" class="button default">Cancel</a>
   </div>
 </form>
 {% endblock %}

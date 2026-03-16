@@ -96,14 +96,14 @@ class WarehouseAccountOverview(models.Model):
     """
     warehouse = models.CharField(max_length=255, db_index=True)
     account = models.CharField(max_length=255, db_index=True)
-    capacity = models.PositiveIntegerField(default=0)
-    clearance = models.PositiveIntegerField(default=0)
-    inbound = models.PositiveIntegerField(default=0)
-    outbound = models.PositiveIntegerField(default=0)
-    transportation = models.PositiveIntegerField(default=0)
-    occupied_location = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    capacity = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    clearance = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    inbound = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    outbound = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    transportation = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    occupied_location = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now,  blank=True, null=True)  # قابل للتعديل لإضافة/تعديل تاريخ الداتا
+    updated_at = models.DateTimeField(auto_now=True,  blank=True, null=True)
 
     class Meta:
         verbose_name = "Warehouse & Account Row"
@@ -113,6 +113,20 @@ class WarehouseAccountOverview(models.Model):
 
     def __str__(self):
         return f"{self.warehouse} — {self.account}"
+
+
+class WarehouseImportLog(models.Model):
+    """يسجّل كل استيراد إكسل لشيت Warehouse — الافتراضي في الهوم والأدمن = تاريخ آخر استيراد (effective_date)."""
+    effective_date = models.DateField(db_index=True)
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Warehouse Import Log"
+        verbose_name_plural = "Warehouse Import Logs"
+        ordering = ("-imported_at",)
+
+    def __str__(self):
+        return f"{self.effective_date} @ {self.imported_at}"
 
 
 class CapacityVolume(models.Model):
