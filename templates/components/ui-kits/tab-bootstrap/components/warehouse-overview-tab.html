@@ -454,6 +454,15 @@
         </select>
       </div>
       <div class="d-flex align-items-center gap-2">
+        <label for="warehouse-account-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">Account</label>
+        <select id="warehouse-account-filter" class="form-select form-select-sm" style="min-width: 220px; border-color: #4A90E2;">
+          <option value="">All</option>
+          {% for a in all_account_names %}
+          <option value="{{ a }}" {% if selected_account == a %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex align-items-center gap-2">
         <label for="warehouse-day-filter" class="form-label mb-0 fw-semibold" style="color: #1E293B;">Day</label>
         <select id="warehouse-day-filter" class="form-select form-select-sm" style="min-width: 160px; border-color: #4A90E2;">
           {% for date in available_dates %}
@@ -479,7 +488,7 @@
             <div class="card-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg>
             </div>
-            <span class="card-value">{% if totals.total_clearance %}{{ totals.total_clearance }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_clearance is not None %}{{ totals.total_clearance }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
@@ -531,7 +540,7 @@
             <div class="card-icon">
               <img src="https://cdn-icons-png.flaticon.com/128/17865/17865314.png" alt="Delivery truck" style="width:30px; height:30px; object-fit:contain;" />
             </div>
-            <span class="card-value">{% if totals.total_inbound %}{{ totals.total_inbound }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_inbound is not None %}{{ totals.total_inbound }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
@@ -583,7 +592,7 @@
             <div class="card-icon">
               <img src="https://cdn-icons-png.flaticon.com/128/17865/17865314.png" alt="Delivery truck" style="width:30px; height:30px; object-fit:contain;" />
             </div>
-            <span class="card-value">{% if totals.total_outbound %}{{ totals.total_outbound }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_outbound is not None %}{{ totals.total_outbound }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
@@ -635,7 +644,7 @@
             <div class="card-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16"><path d="M0 3.5A.5.5 0 0 1 .5 3H15a1 1 0 0 1 1 1v1.5H.5V3z"/><path d="M0 6.5V15a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V6.5H0zM2 8a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V8zm4 0a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5V8zm4-3.5A.5.5 0 0 1 11 4h2a.5.5 0 0 1 .5.5V6h-3V4.5z"/></svg>
             </div>
-            <span class="card-value">{% if totals.total_transportation %}{{ totals.total_transportation }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_transportation is not None %}{{ totals.total_transportation }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
@@ -690,7 +699,7 @@
                 <path d="M4 1.5A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.707a1.5 1.5 0 0 0-.44-1.06l-3.707-3.706A1.5 1.5 0 0 0 9.293 1.5H4zm5 .707V5a1 1 0 0 0 1 1h2.793L9 2.207z"/>
               </svg>
             </div>
-            <span class="card-value">{% if totals.total_pods %}{{ totals.total_pods }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_pods is not None %}{{ totals.total_pods }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
@@ -853,7 +862,7 @@
                 <div class="flex-grow-1">
                   <span class="text-muted small" style="color: #327450 !important;">Lowest Account</span>
                   <div class="fw-semibold" style="color: #1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ card.lowest_account_name }}</div>
-                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #2F6EC2;">{{ card.lowest_account_count }}</span>
+                  <span class="wh-util-count fw-bold" style="font-size: 1.15rem; color: #2F6EC2;">{% if card.lowest_account_count is not None %}{{ card.lowest_account_count }}{% else %}—{% endif %}</span>
                 </div>
               </div>
             </div>
@@ -886,7 +895,7 @@
   </div>
   <script>
   (function() {
-    var cards = {{ warehouse_capacity_cards|length }};
+    var cards = Number("{{ warehouse_capacity_cards|length }}");
     if (cards === 0 || typeof Chart === 'undefined') return;
     window._whUtilCharts = window._whUtilCharts || {};
     for (var i = 0; i < cards; i++) {
@@ -934,7 +943,7 @@
     <div class="card-header d-flex flex-column align-items-start" style="background: #CFE1F7; color: #1E293B;">
       <strong>Operations overview</strong>
       <p class="mb-0 mt-2 small text-muted" style="font-size: 0.85rem; color: #475569 !important; font-weight: normal;">
-        <strong>Note:</strong> Inbound = Total pallets received | Outbound = Beer cases shipped | Transportation = Total trucks | PODs = Number of PODs submitted | Utilization = Warehouse space used.
+        <strong>Note:</strong> Inbound = Total pallets received | Outbound = cases shipped | Transportation = Total trucks | PODs = Number of PODs submitted | Utilization = Warehouse space used.
       </p>
     </div>
     <div class="px-3 pt-3 pb-2 border-bottom" style="background: #eaf2fb45; border-color: #E2E8F0 !important;">
@@ -982,13 +991,13 @@
             {% endif %}
             <td><span class="warehouse-account-badge warehouse-account-badge-{{ row.account_badge|default:'gray' }}">{{ row.account }}</span></td>
             {% if row.capacity_rowspan %}
-            <td class="capacity-cell" rowspan="{{ row.capacity_rowspan }}">{% if row.capacity_value %}{{ row.capacity_value }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td class="capacity-cell" rowspan="{{ row.capacity_rowspan }}">{% if row.capacity_value is not None %}{{ row.capacity_value }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
             {% endif %}
-            <td>{% if row.clearance %}{{ row.clearance }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.inbound %}{{ row.inbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.outbound %}{{ row.outbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.transportation %}{{ row.transportation }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.occupied_location %}{{ row.occupied_location }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.clearance is not None %}{{ row.clearance }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.inbound is not None %}{{ row.inbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.outbound is not None %}{{ row.outbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.transportation is not None %}{{ row.transportation }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.occupied_location is not None %}{{ row.occupied_location }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
             <td class="align-middle">
               {% if row.utilization_pct is not None and row.utilization_pct != '' %}
               <div class="warehouse-util-cell">

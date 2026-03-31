@@ -527,7 +527,7 @@
       formData.append('excel_file', file);
       formData.append('upload_code', code);
 
-      fetch('{% url 'dashboard:upload_excel' %}', {
+      fetch("{% url 'dashboard:upload_excel' %}", {
         method: 'POST',
         body: formData,
         headers: {
@@ -571,13 +571,14 @@
     const TAB_CACHE_VERSION = "v7_table_style"; // زيدي الرقم عند تحديث شكل الجداول
     const TAB_CACHE_TTL_MS = 60 * 60 * 1000; // 60 دقيقة — عشان لما ترجع تفتح الموقع التابات تبقى محمّلة
 
-    function buildTabCacheKey(tab, month, quarter, wh, day) {
+    function buildTabCacheKey(tab, month, quarter, wh, acc, day) {
       const safeTab = (tab || "all").toLowerCase();
       const safeMonth = month && month !== "" ? month : "all";
       const safeQuarter = quarter && quarter !== "" ? quarter : "all";
       const safeWh = (wh && String(wh).trim()) ? String(wh).trim() : "all";
+      const safeAcc = (acc && String(acc).trim()) ? String(acc).trim() : "all";
       const safeDay = (day && String(day).trim()) ? String(day).trim() : "all";
-      return `${TAB_CACHE_PREFIX}:${TAB_CACHE_VERSION}:${safeTab}:${safeMonth}:${safeQuarter}:${safeWh}:${safeDay}`;
+      return `${TAB_CACHE_PREFIX}:${TAB_CACHE_VERSION}:${safeTab}:${safeMonth}:${safeQuarter}:${safeWh}:${safeAcc}:${safeDay}`;
     }
 
     function readTabCache(key) {
@@ -879,10 +880,13 @@
       const wh = (selectedTab === "warehouse-overview" && $("#warehouse-wh-filter").length)
         ? ($("#warehouse-wh-filter").val() || "").trim()
         : "";
+      const acc = (selectedTab === "warehouse-overview" && $("#warehouse-account-filter").length)
+        ? ($("#warehouse-account-filter").val() || "").trim()
+        : "";
       const day = (selectedTab === "warehouse-overview" && $("#warehouse-day-filter").length)
         ? ($("#warehouse-day-filter").val() || "").trim()
         : "";
-      const cacheKey = buildTabCacheKey(selectedTab, month, quarter, wh, day);
+      const cacheKey = buildTabCacheKey(selectedTab, month, quarter, wh, acc, day);
       const cachedPayload = readTabCache(cacheKey);
       const skipLoader = !!cachedPayload;
 
@@ -893,6 +897,7 @@
       const ajaxData = { tab: selectedTab, month: month, quarter: quarter };
       if (selectedTab === "warehouse-overview") {
         ajaxData.wh = wh;
+        ajaxData.acc = acc;
         ajaxData.day = day;
       }
 
@@ -989,7 +994,7 @@
     });
 
     // 🔹 فلتر المستودعات واليوم في تاب Warehouse and Account Overview
-    $(document).on("change", "#warehouse-wh-filter, #warehouse-day-filter", function () {
+    $(document).on("change", "#warehouse-wh-filter, #warehouse-account-filter, #warehouse-day-filter", function () {
       if (($(".nav-link.active").data("tab") || "").toLowerCase() === "warehouse-overview") {
         loadTabData();
       }

@@ -56,49 +56,74 @@ class WarehouseDayFilter(admin.SimpleListFilter):
 
 
 class ZeroAsNoDataInput(forms.NumberInput):
-    """يعرض placeholder 'No Data' عندما القيمة 0 مع إبقاء الحقل قابلاً للتعديل."""
+    """قيمة فارغة أو No Data = لا تظهر رقم؛ الصفر يظهر 0."""
     attrs = {"placeholder": "No Data"}
 
     def get_context(self, name, value, attrs):
-        if value is None or value == 0 or (isinstance(value, str) and value.strip() in ("", "0")):
+        if value is None or (isinstance(value, str) and value.strip() == ""):
             value = ""
         attrs = {**(self.attrs or {}), **(attrs or {})}
         attrs.setdefault("placeholder", "No Data")
         return super().get_context(name, value, attrs)
 
 
-def _clean_zero(v):
-    if v is None or v == "" or (isinstance(v, str) and v.strip() == ""):
-        return 0
+def _clean_metric(v):
+    """فارغ / No Data → NULL في الداتابيز؛ 0 يبقى 0."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+        if s.lower() in ("no data", "nodata", "n/a", "na", "#n/a", "-", "—"):
+            return None
+        try:
+            return int(s, 10)
+        except ValueError:
+            return None
     try:
         return int(v)
     except (ValueError, TypeError):
-        return 0
+        return None
 
 
 class WarehouseAccountOverviewChangelistForm(forms.ModelForm):
-    """تحويل القيم الفارغة إلى 0 عند التعديل من جدول الـ changelist."""
+    """الأرقام: 0 أو رقم؛ الفراغ أو نص No Data يحفظ كـ NULL."""
     class Meta:
         model = WarehouseAccountOverview
         fields = "__all__"
 
     def clean_capacity(self):
-        return _clean_zero(self.cleaned_data.get("capacity"))
+        return _clean_metric(self.cleaned_data.get("capacity"))
 
     def clean_clearance(self):
-        return _clean_zero(self.cleaned_data.get("clearance"))
+        return _clean_metric(self.cleaned_data.get("clearance"))
 
     def clean_inbound(self):
-        return _clean_zero(self.cleaned_data.get("inbound"))
+        return _clean_metric(self.cleaned_data.get("inbound"))
 
     def clean_outbound(self):
-        return _clean_zero(self.cleaned_data.get("outbound"))
+        return _clean_metric(self.cleaned_data.get("outbound"))
 
     def clean_transportation(self):
-        return _clean_zero(self.cleaned_data.get("transportation"))
+        return _clean_metric(self.cleaned_data.get("transportation"))
 
     def clean_occupied_location(self):
-        return _clean_zero(self.cleaned_data.get("occupied_location"))
+        return _clean_metric(self.cleaned_data.get("occupied_location"))
+
+    def clean_created_at(self):
+        """
+        عند التعديل من شاشة الـ changelist:
+        - لو تركتِ خانة التاريخ فاضية، نحافظ على نفس قيمة created_at القديمة
+          حتى لا تختفي الصفوف من التقارير والهوم.
+        - لو كان الصف جديدًا تمامًا بدون تاريخ، نستخدم تاريخ اليوم.
+        """
+        value = self.cleaned_data.get("created_at")
+        if value in (None, ""):
+            if self.instance and self.instance.pk:
+                return self.instance.created_at or timezone.now()
+            return timezone.now()
+        return value
 
 
 @admin.register(WarehouseAccountOverview)
@@ -228,15 +253,24 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
             if not f.name.lower().endswith((".xlsx", ".xls")):
                 messages.error(request, "Please upload an Excel file (.xlsx or .xls) only.")
                 return redirect("admin:dashboard_warehouseaccountoverview_import")
-            def safe_int(val, default=0):
+            def excel_metric(val):
+                """رقم من الإكسل: 0 يبقى 0؛ نص No Data أو فراغ → NULL."""
                 if val is None or (isinstance(val, float) and pd.isna(val)):
-                    return default
-                if isinstance(val, str) and val.strip() in ("", "-", "—", "nan", "NaN"):
-                    return default
+                    return None
+                if isinstance(val, str):
+                    s = val.strip()
+                    if not s or s in ("-", "—", "nan", "NaN"):
+                        return None
+                    if s.lower() in ("no data", "nodata", "n/a", "na", "#n/a"):
+                        return None
+                    try:
+                        return int(float(s.replace(",", "")))
+                    except (ValueError, TypeError):
+                        return None
                 try:
                     return int(float(val))
                 except (ValueError, TypeError):
-                    return default
+                    return None
 
             # تاريخ البيانات (حتى يمكن رفع ملف لليوم أو الأمس أو أي تاريخ قديم)
             effective_date_str = (request.POST.get("effective_date") or "").strip()
@@ -310,7 +344,7 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
             # في شيت Da-tamer عمود Capacity غالباً مدمج (merged) مع المستودع — نملأ القيمة للأسفل مثل Warehouse
             cap_col = col_map.get("capacity")
             if cap_col and cap_col in df.columns:
-                df[cap_col] = df[cap_col].replace("", None).replace("-", None).ffill().fillna(0)
+                df[cap_col] = df[cap_col].replace("", None).replace("-", None).ffill()
             created = 0
             # نحذف بيانات نفس اليوم (UTC) ثم ندرج الجديد بنفس التوقيت حتى يطابق فلتر الأدمن
             start, end = _warehouse_day_range(effective_date)
@@ -328,12 +362,12 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                 WarehouseAccountOverview.objects.create(
                     warehouse=w or "—",
                     account=a or "—",
-                    capacity=safe_int(row.get(col_map.get("capacity"))),
-                    clearance=safe_int(row.get(col_map.get("clearance"))),
-                    inbound=safe_int(row.get(col_map.get("inbound"))),
-                    outbound=safe_int(row.get(col_map.get("outbound"))),
-                    transportation=safe_int(row.get(col_map.get("transportation"))),
-                    occupied_location=safe_int(row.get(col_map.get("occupied_location"))),
+                    capacity=excel_metric(row.get(col_map.get("capacity"))),
+                    clearance=excel_metric(row.get(col_map.get("clearance"))),
+                    inbound=excel_metric(row.get(col_map.get("inbound"))),
+                    outbound=excel_metric(row.get(col_map.get("outbound"))),
+                    transportation=excel_metric(row.get(col_map.get("transportation"))),
+                    occupied_location=excel_metric(row.get(col_map.get("occupied_location"))),
                     created_at=effective_datetime,
                 )
                 created += 1
@@ -359,7 +393,9 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                         w = str(row.get(wh_col_cap, "") or "").strip()
                         if not w:
                             continue
-                        cap_val = safe_int(row.get(cap_col))
+                        cap_val = excel_metric(row.get(cap_col))
+                        if cap_val is None:
+                            cap_val = 0
                         CapacityVolume.objects.create(warehouse=w, capacity=cap_val)
                         cap_created += 1
                     msg_parts.append(f"Imported {cap_created} row(s) from sheet «{cap_sheet}» (Capacity).")

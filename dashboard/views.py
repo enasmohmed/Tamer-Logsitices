@@ -3382,6 +3382,8 @@ class UploadExcelViewRoche(View):
         from django.db.models import Sum, Q
         wh_filter = (request.GET.get("wh") or request.GET.get("warehouse") or "").strip()
         selected_warehouse = wh_filter if wh_filter else None
+        acc_filter = (request.GET.get("acc") or request.GET.get("account") or "").strip()
+        selected_account = acc_filter if acc_filter else None
 
         # قائمة التواريخ من التايمزون المحلي فقط (نفس منطق الأدمن) — لو حذفت يوم من الأدمن يختفي من الدروب دون
         tz_today = timezone.now().date()
@@ -3433,37 +3435,52 @@ class UploadExcelViewRoche(View):
         start = timezone.make_aware(_dt.combine(date_filter, _dt.min.time()), tz)
         end = start + timedelta(days=1)
 
-        qs = WarehouseAccountOverview.objects.all()
+        # Base queryset for the selected day (+ optional WH) to populate dropdowns
+        base_qs = WarehouseAccountOverview.objects.filter(created_at__gte=start, created_at__lt=end)
         if selected_warehouse:
-            qs = qs.filter(warehouse=selected_warehouse)
-        qs = qs.filter(created_at__gte=start, created_at__lt=end)
+            base_qs = base_qs.filter(warehouse=selected_warehouse)
+
+        all_account_names = list(
+            base_qs.order_by("account").values_list("account", flat=True).distinct()
+        )
+
+        # Apply optional Account filter for displayed data
+        qs = base_qs
+        if selected_account:
+            qs = qs.filter(account=selected_account)
         raw_rows = list(
             qs.values(
                 "warehouse", "account", "capacity", "clearance", "inbound", "outbound",
                 "transportation", "occupied_location"
             )
         )
-        # حذف أي صف فيه قيمة NaN
-        def _is_nan_like(v):
-            if v is None:
-                return True
+        # تجاهل صفوف بدون مستودع/حساب؛ NULL في الأرقام مسموح (يعرض كـ No Data في الجدول)
+        def _is_bad_float(v):
             if isinstance(v, float) and (np.isnan(v) or v != v):
                 return True
             if isinstance(v, str) and str(v).strip().lower() == "nan":
                 return True
             return False
 
-        rows = [r for r in raw_rows if not any(_is_nan_like(v) for v in r.values())]
+        rows = []
+        for r in raw_rows:
+            if _is_bad_float(r.get("capacity")) or _is_bad_float(r.get("occupied_location")):
+                continue
+            wh_name = str(r.get("warehouse") or "").strip()
+            acc_name = str(r.get("account") or "").strip()
+            if not wh_name and not acc_name:
+                continue
+            rows.append(r)
         agg = qs.aggregate(
             total_inbound=Sum("inbound"),
             total_outbound=Sum("outbound"),
             total_clearance=Sum("clearance"),
             total_transportation=Sum("transportation"),
         )
-        total_inbound = agg["total_inbound"] or 0
-        total_outbound = agg["total_outbound"] or 0
-        total_clearance = agg["total_clearance"] or 0
-        total_transportation = agg["total_transportation"] or 0
+        total_inbound = agg["total_inbound"]
+        total_outbound = agg["total_outbound"]
+        total_clearance = agg["total_clearance"]
+        total_transportation = agg["total_transportation"]
 
         # أسماء المستودعات بنفس ترتيب ظهورها (بدون ترتيب أبجدي)
         warehouse_names = []
@@ -3487,6 +3504,7 @@ class UploadExcelViewRoche(View):
             "total_outbound": total_outbound,
             "total_clearance": total_clearance,
             "total_transportation": total_transportation,
+            "total_pods": None,
         }
         # أعلى وأقل مستودع (Warehouse) وأعلى وأقل Account لكل مقياس — للعرض: Highest Warehouse – Account: WH (count) – Acc (count)
         by_warehouse = {}
@@ -3559,7 +3577,7 @@ class UploadExcelViewRoche(View):
             if wh != prev_wh:
                 if group_count > 0:
                     first_in_group = len(table_rows) - group_count
-                    group_capacity = table_rows[first_in_group].get("capacity") or 0
+                    group_capacity = table_rows[first_in_group].get("capacity")
                     for j in range(first_in_group, len(table_rows)):
                         if j == first_in_group:
                             table_rows[j]["warehouse_rowspan"] = group_count
@@ -3576,17 +3594,17 @@ class UploadExcelViewRoche(View):
             else:
                 group_count += 1
             r["row_bg"] = row_bg
-            # Utilization % = (Occupied Location / Capacity) * 100
-            cap = r.get("capacity") or 0
-            occ = r.get("occupied_location") or 0
-            if cap and cap > 0:
+            # Utilization % = (Occupied Location / Capacity) * 100 (NULL ≠ 0)
+            cap = r.get("capacity")
+            occ = r.get("occupied_location")
+            if cap is not None and cap > 0 and occ is not None:
                 r["utilization_pct"] = round(occ / cap * 100, 1)
             else:
                 r["utilization_pct"] = None
             table_rows.append(r)
         if group_count > 0:
             first_in_group = len(table_rows) - group_count
-            group_capacity = table_rows[first_in_group].get("capacity") or 0
+            group_capacity = table_rows[first_in_group].get("capacity")
             for j in range(first_in_group, len(table_rows)):
                 if j == first_in_group:
                     table_rows[j]["warehouse_rowspan"] = group_count
@@ -3605,10 +3623,12 @@ class UploadExcelViewRoche(View):
                 seen_all_wh.add(w_name)
                 all_warehouse_names.append(w_name)
 
-        # كروت Capacity and Utilization: لكل مستودع — Utilization %، أعلى Account، أقل Account، + ترند (اليوم/أمس/قبل أمس) للـ hover
-        yesterday_date = tz_today - timedelta(days=1)
-        day_before_yesterday_date = tz_today - timedelta(days=2)
+        # أساس تواريخ الترند = اليوم المختار في الفلتر (نفس بيانات الجدول وعدم الاعتماد على تاريخ السيرفر)
+        trend_base_date = date_filter or tz_today
+        yesterday_date = trend_base_date - timedelta(days=1)
+        day_before_yesterday_date = trend_base_date - timedelta(days=2)
 
+        # كروت Capacity and Utilization: لكل مستودع — Utilization %، أعلى Account، أقل Account، + ترند (اليوم/أمس/قبل أمس) للـ hover
         def _util_for_warehouse_date(warehouse_name, dt):
             q = WarehouseAccountOverview.objects.filter(warehouse=warehouse_name)
             if dt is not None:
@@ -3616,9 +3636,11 @@ class UploadExcelViewRoche(View):
             grp = list(q.values("capacity", "occupied_location"))
             if not grp:
                 return 0
-            cap = grp[0].get("capacity") or 0
-            total_occ = sum(x.get("occupied_location") or 0 for x in grp)
-            return int(round(total_occ / cap * 100)) if cap and cap > 0 else 0
+            cap = grp[0].get("capacity")
+            occ_vals = [x.get("occupied_location") for x in grp if x.get("occupied_location") is not None]
+            if cap is not None and cap > 0 and occ_vals:
+                return int(round(sum(occ_vals) / cap * 100))
+            return 0
 
         wh_rows = {}
         for r in rows:
@@ -3631,14 +3653,26 @@ class UploadExcelViewRoche(View):
             if wh not in wh_rows or not wh_rows[wh]:
                 continue
             grp = wh_rows[wh]
-            cap = grp[0].get("capacity") or 0
-            total_occ = sum(x.get("occupied_location") or 0 for x in grp)
-            util_pct = int(round(total_occ / cap * 100)) if cap and cap > 0 else 0
-            sorted_by_occ = sorted(grp, key=lambda x: (x.get("occupied_location") or 0), reverse=True)
+            cap = grp[0].get("capacity")
+            occ_numeric = [x.get("occupied_location") for x in grp if x.get("occupied_location") is not None]
+            if cap is not None and cap > 0 and occ_numeric:
+                util_pct = int(round(sum(occ_numeric) / cap * 100))
+            else:
+                util_pct = 0
+            sorted_by_occ = sorted(
+                [x for x in grp if x.get("occupied_location") is not None],
+                key=lambda x: (x.get("occupied_location") or 0),
+                reverse=True,
+            )
             high_acc = sorted_by_occ[0] if sorted_by_occ else {}
-            low_acc = sorted_by_occ[-1] if sorted_by_occ else {}
-            # ترند Utilization % للـ hover: اليوم، أمس، قبل أمس — إحداثيات Y للشارت (5–35)
-            util_today = _util_for_warehouse_date(wh, tz_today)
+            # أقل Account = أقل قيمة occupied_location الأكبر من صفر (لا نعرض صفر كـ "أقل")
+            positive_occ = [x for x in grp if (x.get("occupied_location") or 0) > 0]
+            if positive_occ:
+                low_acc = min(positive_occ, key=lambda x: (x.get("occupied_location") or 0))
+            else:
+                low_acc = {}
+            # ترند Utilization % للـ hover: نفس ثلاثية التواريخ المعروضة (مبنية على اليوم المختار)
+            util_today = _util_for_warehouse_date(wh, trend_base_date)
             util_yesterday = _util_for_warehouse_date(wh, yesterday_date)
             util_day_before = _util_for_warehouse_date(wh, day_before_yesterday_date)
             def _y_util(u):
@@ -3666,15 +3700,13 @@ class UploadExcelViewRoche(View):
                 "highest_account_name": str(high_acc.get("account") or "").strip() or "—",
                 "highest_account_count": high_acc.get("occupied_location") or 0,
                 "lowest_account_name": str(low_acc.get("account") or "").strip() or "—",
-                "lowest_account_count": low_acc.get("occupied_location") or 0,
+                "lowest_account_count": (
+                    (low_acc.get("occupied_location") or 0) if low_acc else None
+                ),
                 "trend_util": trend_util,
             })
 
-        # تواريخ اليوم/أمس/قبل أمس للعرض في الدروب داون
-        yesterday_date = tz_today - timedelta(days=1)
-        day_before_yesterday_date = tz_today - timedelta(days=2)
-
-        # ترند اليوم / أمس / قبل أمس لكل مقياس (نفس فلتر المستودع) — للـ hover
+        # ترند اليوم / أمس / قبل أمس لكل مقياس (نفس فلتر المستودع واليوم المختار) — للـ hover
         def _totals_for_date(dt):
             q = WarehouseAccountOverview.objects.all()
             if selected_warehouse:
@@ -3688,25 +3720,28 @@ class UploadExcelViewRoche(View):
                 total_transportation=Sum("transportation"),
             )
             return {
-                "clearance": a["total_clearance"] or 0,
-                "inbound": a["total_inbound"] or 0,
-                "outbound": a["total_outbound"] or 0,
-                "transportation": a["total_transportation"] or 0,
+                "clearance": a["total_clearance"],
+                "inbound": a["total_inbound"],
+                "outbound": a["total_outbound"],
+                "transportation": a["total_transportation"],
             }
 
-        trend_today = _totals_for_date(tz_today)
+        trend_today = _totals_for_date(trend_base_date)
         trend_yesterday = _totals_for_date(yesterday_date)
         trend_day_before = _totals_for_date(day_before_yesterday_date)
 
         def _trend_metric(today_val, yesterday_val, day_before_val):
-            m = max(today_val, yesterday_val, day_before_val) or 1
+            def _for_axis(v):
+                return 0 if v is None else int(v)
+            t, y, db = _for_axis(today_val), _for_axis(yesterday_val), _for_axis(day_before_val)
+            m = max(t, y, db) or 1
             # إحداثيات Y للـ line chart أفقي (يسار → يمين): viewBox عريض 100×40، قيمة أعلى = نقطة أعلى
             def _y_hrz(val):
                 return 35 - int(30 * (val / m))  # 5–35 نطاق عمودي داخل ارتفاع 40
             return {
                 "today": today_val, "yesterday": yesterday_val, "day_before": day_before_val,
                 "max": m,
-                "y_today": _y_hrz(today_val), "y_yesterday": _y_hrz(yesterday_val), "y_day_before": _y_hrz(day_before_val),
+                "y_today": _y_hrz(t), "y_yesterday": _y_hrz(y), "y_day_before": _y_hrz(db),
             }
 
         trend_totals = {
@@ -3725,11 +3760,13 @@ class UploadExcelViewRoche(View):
                 "warehouse_names": warehouse_names,
                 "account_names": account_names,
                 "selected_warehouse": selected_warehouse,
+                "selected_account": selected_account,
                 "all_warehouse_names": all_warehouse_names,
+                "all_account_names": all_account_names,
                 "selected_day": selected_day_value,
                 "selected_date": date_filter,
                 "available_dates": available_dates,
-                "today_date": tz_today,
+                "today_date": trend_base_date,
                 "yesterday_date": yesterday_date,
                 "day_before_yesterday_date": day_before_yesterday_date,
                 "card_high_low": card_high_low,
