@@ -118,7 +118,7 @@
     color: #2F6EC2;
   }
 
-  /* الخمسة كروت جنب بعض (ممتدة بعرض الديف بدون اي مسافة يمين ويسار) */
+  /* كروت الـKPI جنب بعض (ممتدة بعرض الديف بدون اي مسافة يمين ويسار) */
   .warehouse-kpi-cards-row {
     width: 100%;
     margin-left: 0;
@@ -134,7 +134,7 @@
   .warehouse-kpi-card-col {
     min-width: 0;
     flex: 1 1 0;
-    max-width: 20%;
+    max-width: 25%;
     display: flex;
     padding: 0;
     margin: 0;
@@ -478,7 +478,7 @@
   <!-- بيانات أعلى/أقل Warehouse و Account لكل مقياس (للاستخدام في JS عند الضغط) -->
   {{ card_high_low|json_script:"warehouse-card-high-low" }}
 
-  <!-- الخمسة كروت جنب بعض -->
+  <!-- كروت الـKPI جنب بعض -->
   <div class="warehouse-kpi-cards-row mb-4" id="warehouse-kpi-cards-row">
     <div class="warehouse-kpi-card-col">
       <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="clearance" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
@@ -504,10 +504,10 @@
             <strong>Lowest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.clearance.low_warehouse|default:"-" }} ({{ card_high_low.clearance.low_warehouse_value|default:0 }})
+                {{ card_high_low.clearance.low_warehouse|default:"-" }} ({% if card_high_low.clearance.low_warehouse_value is not None and card_high_low.clearance.low_warehouse_value != '' %}{{ card_high_low.clearance.low_warehouse_value }}{% else %}-{% endif %})
               </li>
               <li>
-                {{ card_high_low.clearance.low_account|default:"-" }} ({{ card_high_low.clearance.low_account_value|default:0 }})
+                {{ card_high_low.clearance.low_account|default:"-" }} ({% if card_high_low.clearance.low_account_value is not None and card_high_low.clearance.low_account_value != '' %}{{ card_high_low.clearance.low_account_value }}{% else %}-{% endif %})
               </li>
             </ul>
           </div>
@@ -556,10 +556,10 @@
             <strong>Lowest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.inbound.low_warehouse|default:"-" }} ({{ card_high_low.inbound.low_warehouse_value|default:0 }})
+                {{ card_high_low.inbound.low_warehouse|default:"-" }} ({% if card_high_low.inbound.low_warehouse_value is not None and card_high_low.inbound.low_warehouse_value != '' %}{{ card_high_low.inbound.low_warehouse_value }}{% else %}-{% endif %})
               </li>
               <li>
-                {{ card_high_low.inbound.low_account|default:"-" }} ({{ card_high_low.inbound.low_account_value|default:0 }})
+                {{ card_high_low.inbound.low_account|default:"-" }} ({% if card_high_low.inbound.low_account_value is not None and card_high_low.inbound.low_account_value != '' %}{{ card_high_low.inbound.low_account_value }}{% else %}-{% endif %})
               </li>
             </ul>
           </div>
@@ -608,10 +608,10 @@
             <strong>Lowest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.outbound.low_warehouse|default:"-" }} ({{ card_high_low.outbound.low_warehouse_value|default:0 }})
+                {{ card_high_low.outbound.low_warehouse|default:"-" }} ({% if card_high_low.outbound.low_warehouse_value is not None and card_high_low.outbound.low_warehouse_value != '' %}{{ card_high_low.outbound.low_warehouse_value }}{% else %}-{% endif %})
               </li>
               <li>
-                {{ card_high_low.outbound.low_account|default:"-" }} ({{ card_high_low.outbound.low_account_value|default:0 }})
+                {{ card_high_low.outbound.low_account|default:"-" }} ({% if card_high_low.outbound.low_account_value is not None and card_high_low.outbound.low_account_value != '' %}{{ card_high_low.outbound.low_account_value }}{% else %}-{% endif %})
               </li>
             </ul>
           </div>
@@ -660,10 +660,10 @@
             <strong>Lowest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.transportation.low_warehouse|default:"-" }} ({{ card_high_low.transportation.low_warehouse_value|default:0 }})
+                {{ card_high_low.transportation.low_warehouse|default:"-" }} ({% if card_high_low.transportation.low_warehouse_value is not None and card_high_low.transportation.low_warehouse_value != '' %}{{ card_high_low.transportation.low_warehouse_value }}{% else %}-{% endif %})
               </li>
               <li>
-                {{ card_high_low.transportation.low_account|default:"-" }} ({{ card_high_low.transportation.low_account_value|default:0 }})
+                {{ card_high_low.transportation.low_account|default:"-" }} ({% if card_high_low.transportation.low_account_value is not None and card_high_low.transportation.low_account_value != '' %}{{ card_high_low.transportation.low_account_value }}{% else %}-{% endif %})
               </li>
             </ul>
           </div>
@@ -682,61 +682,6 @@
                 <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.day_before }}</strong></span>
                 <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.yesterday }}</strong></span>
                 <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.transportation.today }}</strong></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="warehouse-kpi-card-col">
-      <div class="card h-100 warehouse-theme-card warehouse-kpi-card position-relative" data-metric="pods" style="background: linear-gradient(357deg, #4A90E2 0%, #8a97a9c2 70%, #ffffff 100% 100%) !important;">
-        <div class="card-body">
-          <h6 class="warehouse-card-title">Total PODs</h6>
-          <div class="warehouse-card">
-            <div class="card-icon">
-              <!-- PODs Icon (Document style) -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M4 1.5A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.707a1.5 1.5 0 0 0-.44-1.06l-3.707-3.706A1.5 1.5 0 0 0 9.293 1.5H4zm5 .707V5a1 1 0 0 0 1 1h2.793L9 2.207z"/>
-              </svg>
-            </div>
-            <span class="card-value">{% if totals.total_pods is not None %}{{ totals.total_pods }}{% else %}No Data{% endif %}</span>
-          </div>
-          <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
-          <div class="card-high-low" style="display: block;">
-            <strong>Highest Warehouse – Account:</strong>
-            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
-              <li>
-                {{ card_high_low.pods.high_warehouse|default:"-" }} ({{ card_high_low.pods.high_warehouse_value|default:0 }})
-              </li>
-              <li>
-                {{ card_high_low.pods.high_account|default:"-" }} ({{ card_high_low.pods.high_account_value|default:0 }})
-              </li>
-            </ul>
-            <strong>Lowest Warehouse – Account:</strong>
-            <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
-              <li>
-                {{ card_high_low.pods.low_warehouse|default:"-" }} ({{ card_high_low.pods.low_warehouse_value|default:0 }})
-              </li>
-              <li>
-                {{ card_high_low.pods.low_account|default:"-" }} ({{ card_high_low.pods.low_account_value|default:0 }})
-              </li>
-            </ul>
-          </div>
-          <div class="warehouse-kpi-card-details">
-            <div class="warehouse-trend-chart">
-              <div class="warehouse-trend-title">Trend: Today vs Yesterday</div>
-              <div class="warehouse-trend-line-wrap">
-                <svg viewBox="0 0 100 40" preserveAspectRatio="xMidYMid meet">
-                  <polyline class="trend-line" points="10,{{ trend_totals.pods.y_day_before }} 50,{{ trend_totals.pods.y_yesterday }} 90,{{ trend_totals.pods.y_today }}"/>
-                  <circle class="trend-point" cx="10" cy="{{ trend_totals.pods.y_day_before }}" r="4"/>
-                  <circle class="trend-point" cx="50" cy="{{ trend_totals.pods.y_yesterday }}" r="4"/>
-                  <circle class="trend-point" cx="90" cy="{{ trend_totals.pods.y_today }}" r="4"/>
-                </svg>
-              </div>
-              <div class="warehouse-trend-labels">
-                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.day_before }}</strong></span>
-                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.yesterday }}</strong></span>
-                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.today }}</strong></span>
               </div>
             </div>
           </div>
@@ -943,7 +888,7 @@
     <div class="card-header d-flex flex-column align-items-start" style="background: #CFE1F7; color: #1E293B;">
       <strong>Operations overview</strong>
       <p class="mb-0 mt-2 small text-muted" style="font-size: 0.85rem; color: #475569 !important; font-weight: normal;">
-        <strong>Note:</strong> Inbound = Total pallets received | Outbound = cases shipped | Transportation = Total trucks | PODs = Number of PODs submitted | Utilization = Warehouse space used.
+        <strong>Note:</strong> Inbound = Total pallets received | Outbound = PODs shipped | Transportation = Total trucks | PODs = Number of PODs submitted | Utilization = Warehouse space used.
       </p>
     </div>
     <div class="px-3 pt-3 pb-2 border-bottom" style="background: #eaf2fb45; border-color: #E2E8F0 !important;">

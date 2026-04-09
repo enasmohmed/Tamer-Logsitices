@@ -3525,22 +3525,45 @@ class UploadExcelViewRoche(View):
             by_account[acc]["clearance"] += r.get("clearance") or 0
             by_account[acc]["transportation"] += r.get("transportation") or 0
 
+        def _pick_lowest(items):
+            """Pick the absolute lowest value (may include 0)."""
+            if not items:
+                return None, 0
+            pool = list(items)
+            pool.sort(key=lambda x: (x[1], x[0]))
+            return pool[0]
+
+        def _pick_lowest_positive(items):
+            """Pick the lowest value > 0. If none exist, return (None, None)."""
+            if not items:
+                return None, None
+            positive = [it for it in items if (it[1] or 0) > 0]
+            if not positive:
+                return None, None
+            positive.sort(key=lambda x: (x[1], x[0]))
+            return positive[0]
+
         def _high_low_wh(metric_key):
             if not by_warehouse:
-                return None, 0, None, 0
-            items = [(w, by_warehouse[w][metric_key]) for w in by_warehouse]
-            items.sort(key=lambda x: (x[1], x[0]), reverse=True)
-            high_w, high_v = items[0] if items else (None, 0)
-            low_w, low_v = items[-1] if items else (None, 0)
+                return None, 0, None, None
+            items = [(w, by_warehouse[w][metric_key]) for w in by_warehouse if str(w).strip()]
+            if not items:
+                return None, 0, None, None
+            # Highest: largest value then name
+            items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+            high_w, high_v = items_sorted[0]
+            low_w, low_v = _pick_lowest_positive(items)
             return high_w, high_v, low_w, low_v
 
         def _high_low_acc(metric_key):
             if not by_account:
-                return None, 0, None, 0
-            items = [(a, by_account[a][metric_key]) for a in by_account]
-            items.sort(key=lambda x: (x[1], x[0]), reverse=True)
-            high_a, high_v = items[0] if items else (None, 0)
-            low_a, low_v = items[-1] if items else (None, 0)
+                return None, 0, None, None
+            items = [(a, by_account[a][metric_key]) for a in by_account if str(a).strip()]
+            if not items:
+                return None, 0, None, None
+            items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+            high_a, high_v = items_sorted[0]
+            low_a, low_v = _pick_lowest_positive(items)
             return high_a, high_v, low_a, low_v
 
         def _merge_metric(metric_key):
