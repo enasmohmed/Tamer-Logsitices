@@ -936,13 +936,13 @@
             {% endif %}
             <td><span class="warehouse-account-badge warehouse-account-badge-{{ row.account_badge|default:'gray' }}">{{ row.account }}</span></td>
             {% if row.capacity_rowspan %}
-            <td class="capacity-cell" rowspan="{{ row.capacity_rowspan }}">{% if row.capacity_value is not None %}{{ row.capacity_value }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td class="capacity-cell" rowspan="{{ row.capacity_rowspan }}">{% if row.capacity_value is not None %}{{ row.capacity_value }}{% else %}&nbsp;{% endif %}</td>
             {% endif %}
-            <td>{% if row.clearance is not None %}{{ row.clearance }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.inbound is not None %}{{ row.inbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.outbound is not None %}{{ row.outbound }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.transportation is not None %}{{ row.transportation }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
-            <td>{% if row.occupied_location is not None %}{{ row.occupied_location }}{% else %}<span class="warehouse-no-data">No Data</span>{% endif %}</td>
+            <td>{% if row.clearance_display is not None and row.clearance_display != '' %}{{ row.clearance_display }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if row.inbound_display is not None and row.inbound_display != '' %}{{ row.inbound_display }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if row.outbound_display is not None and row.outbound_display != '' %}{{ row.outbound_display }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if row.transportation_display is not None and row.transportation_display != '' %}{{ row.transportation_display }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if row.occupied_location_display is not None and row.occupied_location_display != '' %}{{ row.occupied_location_display }}{% else %}&nbsp;{% endif %}</td>
             <td class="align-middle">
               {% if row.utilization_pct is not None and row.utilization_pct != '' %}
               <div class="warehouse-util-cell">
@@ -952,7 +952,7 @@
                 <span class="warehouse-util-pct-text">{{ row.utilization_pct }}%</span>
               </div>
               {% else %}
-              <span class="warehouse-no-data">No Data</span>
+              &nbsp;
               {% endif %}
             </td>
           </tr>

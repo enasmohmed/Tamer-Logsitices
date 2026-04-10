@@ -3385,17 +3385,334 @@ class UploadExcelViewRoche(View):
         acc_filter = (request.GET.get("acc") or request.GET.get("account") or "").strip()
         selected_account = acc_filter if acc_filter else None
 
-        # قائمة التواريخ من التايمزون المحلي فقط (نفس منطق الأدمن) — لو حذفت يوم من الأدمن يختفي من الدروب دون
+        # IMPORTANT:
+        # Keep Warehouse Overview fully aligned with Admin by reading from DB only.
+        # Do not read directly from session Excel here; that can show "today"
+        # even when that day does not exist in admin-imported data.
+        excel_path = None
+        if excel_path and os.path.exists(excel_path):
+            try:
+                xls = pd.ExcelFile(excel_path, engine="openpyxl")
+                sheet_names = list(xls.sheet_names or [])
+                sheet_lower = {str(s).strip().lower(): s for s in sheet_names}
+                sheet_name = (
+                    sheet_lower.get("da-tamer")
+                    or sheet_lower.get("da tamer")
+                    or sheet_lower.get("sheet1")
+                    or (sheet_names[0] if sheet_names else None)
+                )
+                if sheet_name:
+                    df = pd.read_excel(xls, sheet_name=sheet_name, engine="openpyxl")
+                    df.columns = [str(c).strip() for c in df.columns]
+
+                    def _norm_col(c):
+                        return re.sub(r"[^a-z0-9]", "", str(c).strip().lower())
+
+                    col_map = {_norm_col(c): c for c in df.columns}
+
+                    def _find_col(*cands):
+                        for cand in cands:
+                            key = _norm_col(cand)
+                            if key in col_map:
+                                return col_map[key]
+                        for c in df.columns:
+                            cn = _norm_col(c)
+                            for cand in cands:
+                                if _norm_col(cand) in cn:
+                                    return c
+                        return None
+
+                    c_wh = _find_col("warehouse", "whs", "wh")
+                    c_acc = _find_col("account", "customer", "client")
+                    c_cap = _find_col("capacity")
+                    # Excel header sometimes misspelled (Clearnce)
+                    c_clr = _find_col("clearance", "clearnce", "clrnce")
+                    c_in = _find_col("inbound")
+                    c_out = _find_col("outbound")
+                    c_tr = _find_col("transportation", "transportaion", "trucks")
+                    c_occ = _find_col("occupied location", "occupied_location", "occupied", "occupiedlocation")
+
+                    if c_wh and c_acc:
+                        df2 = df.copy()
+                        # Keep raw values for display "as-is"
+                        df2["_warehouse"] = df2[c_wh].astype(str)
+                        df2["_account"] = df2[c_acc].astype(str)
+
+                        def _raw(v):
+                            if v is None or (isinstance(v, float) and pd.isna(v)):
+                                return ""
+                            s = str(v)
+                            return "" if s.lower().strip() in ("nan", "none", "<nan>") else s
+
+                        def _to_num(v):
+                            if v is None or (isinstance(v, float) and pd.isna(v)):
+                                return 0.0
+                            try:
+                                s = str(v).strip()
+                                if not s or s.lower() in ("nan", "none", "<nan>"):
+                                    return 0.0
+                                return float(s.replace(",", ""))
+                            except Exception:
+                                return 0.0
+
+                        rows_raw = []
+                        for _, r in df2.iterrows():
+                            wh = _raw(r.get(c_wh)).strip()
+                            acc = _raw(r.get(c_acc)).strip()
+                            if not wh and not acc:
+                                continue
+                            row = {
+                                "warehouse": wh,
+                                "account": acc,
+                                "capacity": _raw(r.get(c_cap)) if c_cap else "",
+                                "clearance": _raw(r.get(c_clr)) if c_clr else "",
+                                "inbound": _raw(r.get(c_in)) if c_in else "",
+                                "outbound": _raw(r.get(c_out)) if c_out else "",
+                                "transportation": _raw(r.get(c_tr)) if c_tr else "",
+                                "occupied_location": _raw(r.get(c_occ)) if c_occ else "",
+                            }
+                            # numeric versions for calculations
+                            row["_n_capacity"] = _to_num(r.get(c_cap)) if c_cap else 0.0
+                            row["_n_clearance"] = _to_num(r.get(c_clr)) if c_clr else 0.0
+                            row["_n_inbound"] = _to_num(r.get(c_in)) if c_in else 0.0
+                            row["_n_outbound"] = _to_num(r.get(c_out)) if c_out else 0.0
+                            row["_n_transportation"] = _to_num(r.get(c_tr)) if c_tr else 0.0
+                            row["_n_occupied_location"] = _to_num(r.get(c_occ)) if c_occ else 0.0
+                            rows_raw.append(row)
+
+                        # Apply filters (warehouse/account) on raw strings
+                        if selected_warehouse:
+                            rows_raw = [r for r in rows_raw if r.get("warehouse") == selected_warehouse]
+                        if selected_account:
+                            rows_raw = [r for r in rows_raw if r.get("account") == selected_account]
+
+                        # Names lists (preserve order)
+                        warehouse_names, account_names = [], []
+                        seen_wh, seen_acc = set(), set()
+                        for r in rows_raw:
+                            if r["warehouse"] and r["warehouse"] not in seen_wh:
+                                seen_wh.add(r["warehouse"])
+                                warehouse_names.append(r["warehouse"])
+                            if r["account"] and r["account"] not in seen_acc:
+                                seen_acc.add(r["account"])
+                                account_names.append(r["account"])
+
+                        all_warehouse_names = warehouse_names[:]
+                        all_account_names = account_names[:]
+
+                        # Totals
+                        totals = {
+                            "total_inbound": int(round(sum(r["_n_inbound"] for r in rows_raw))),
+                            "total_outbound": int(round(sum(r["_n_outbound"] for r in rows_raw))),
+                            "total_clearance": int(round(sum(r["_n_clearance"] for r in rows_raw))),
+                            "total_transportation": int(round(sum(r["_n_transportation"] for r in rows_raw))),
+                            "total_pods": None,
+                        }
+
+                        # High/Low (lowest must be >0)
+                        by_warehouse, by_account = {}, {}
+                        for r in rows_raw:
+                            wh = r["warehouse"]
+                            acc = r["account"]
+                            by_warehouse.setdefault(wh, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0})
+                            by_account.setdefault(acc, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0})
+                            by_warehouse[wh]["inbound"] += r["_n_inbound"]
+                            by_warehouse[wh]["outbound"] += r["_n_outbound"]
+                            by_warehouse[wh]["clearance"] += r["_n_clearance"]
+                            by_warehouse[wh]["transportation"] += r["_n_transportation"]
+                            by_account[acc]["inbound"] += r["_n_inbound"]
+                            by_account[acc]["outbound"] += r["_n_outbound"]
+                            by_account[acc]["clearance"] += r["_n_clearance"]
+                            by_account[acc]["transportation"] += r["_n_transportation"]
+
+                        def _low_pos(items):
+                            pos = [(k, v) for k, v in items if float(v or 0) > 0]
+                            if not pos:
+                                return None, None
+                            pos.sort(key=lambda x: (x[1], x[0]))
+                            return pos[0]
+
+                        def _high_low(bucket, metric):
+                            items = [(k, bucket[k][metric]) for k in bucket if str(k).strip()]
+                            if not items:
+                                return None, 0, None, None
+                            items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+                            high_k, high_v = items_sorted[0]
+                            low_k, low_v = _low_pos(items)
+                            return high_k, high_v, low_k, low_v
+
+                        def _merge(metric):
+                            hw, hwv, lw, lwv = _high_low(by_warehouse, metric)
+                            ha, hav, la, lav = _high_low(by_account, metric)
+                            return {
+                                "high_warehouse": hw, "high_warehouse_value": int(round(hwv or 0)),
+                                "low_warehouse": lw, "low_warehouse_value": (int(round(lwv)) if lwv is not None else None),
+                                "high_account": ha, "high_account_value": int(round(hav or 0)),
+                                "low_account": la, "low_account_value": (int(round(lav)) if lav is not None else None),
+                            }
+
+                        card_high_low = {
+                            "clearance": _merge("clearance"),
+                            "inbound": _merge("inbound"),
+                            "outbound": _merge("outbound"),
+                            "transportation": _merge("transportation"),
+                        }
+
+                        # Build table_rows with rowspan logic; keep raw display values
+                        table_rows, prev_wh, group_count, row_bg = [], None, 0, "light"
+                        account_badge_index, badge_idx = {}, 0
+                        for r in rows_raw:
+                            rr = {
+                                "warehouse": r["warehouse"],
+                                "account": r["account"],
+                                "capacity": r["capacity"],
+                                "clearance": r["clearance"],
+                                "inbound": r["inbound"],
+                                "outbound": r["outbound"],
+                                "transportation": r["transportation"],
+                                "occupied_location": r["occupied_location"],
+                            }
+                            acc = rr["account"]
+                            if acc not in account_badge_index:
+                                account_badge_index[acc] = "pink" if (badge_idx % 2 == 0) else "gray"
+                                badge_idx += 1
+                            rr["account_badge"] = account_badge_index[acc]
+                            wh = rr["warehouse"]
+                            if wh != prev_wh:
+                                if group_count > 0:
+                                    first = len(table_rows) - group_count
+                                    group_capacity = table_rows[first].get("capacity")
+                                    for j in range(first, len(table_rows)):
+                                        if j == first:
+                                            table_rows[j]["warehouse_rowspan"] = group_count
+                                            table_rows[j]["warehouse_value"] = prev_wh
+                                            table_rows[j]["capacity_rowspan"] = group_count
+                                            table_rows[j]["capacity_value"] = group_capacity
+                                        else:
+                                            table_rows[j]["warehouse_rowspan"] = 0
+                                            table_rows[j]["capacity_rowspan"] = 0
+                                if prev_wh is not None:
+                                    row_bg = "white" if row_bg == "light" else "light"
+                                prev_wh = wh
+                                group_count = 1
+                            else:
+                                group_count += 1
+                            rr["row_bg"] = row_bg
+                            cap_n = r["_n_capacity"]
+                            occ_n = r["_n_occupied_location"]
+                            rr["utilization_pct"] = round((occ_n / cap_n) * 100, 1) if cap_n and cap_n > 0 else None
+                            table_rows.append(rr)
+                        if group_count > 0:
+                            first = len(table_rows) - group_count
+                            group_capacity = table_rows[first].get("capacity")
+                            for j in range(first, len(table_rows)):
+                                if j == first:
+                                    table_rows[j]["warehouse_rowspan"] = group_count
+                                    table_rows[j]["warehouse_value"] = prev_wh
+                                    table_rows[j]["capacity_rowspan"] = group_count
+                                    table_rows[j]["capacity_value"] = group_capacity
+                                else:
+                                    table_rows[j]["warehouse_rowspan"] = 0
+                                    table_rows[j]["capacity_rowspan"] = 0
+
+                        # Excel doesn't provide per-day history → show a single "Day"
+                        tz_today = timezone.now().date()
+                        available_dates = [tz_today]
+                        trend_base_date = tz_today
+                        yesterday_date = tz_today - timedelta(days=1)
+                        day_before_yesterday_date = tz_today - timedelta(days=2)
+                        trend_totals = {
+                            "clearance": {"today": totals["total_clearance"], "yesterday": totals["total_clearance"], "day_before": totals["total_clearance"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
+                            "inbound": {"today": totals["total_inbound"], "yesterday": totals["total_inbound"], "day_before": totals["total_inbound"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
+                            "outbound": {"today": totals["total_outbound"], "yesterday": totals["total_outbound"], "day_before": totals["total_outbound"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
+                            "transportation": {"today": totals["total_transportation"], "yesterday": totals["total_transportation"], "day_before": totals["total_transportation"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
+                        }
+                        # Capacity & Utilization cards (computed from same Excel rows)
+                        warehouse_capacity_cards = []
+                        wh_groups = {}
+                        for r in rows_raw:
+                            wh = (r.get("warehouse") or "").strip()
+                            if not wh:
+                                continue
+                            wh_groups.setdefault(wh, []).append(r)
+                        for wh in warehouse_names:
+                            grp = wh_groups.get(wh) or []
+                            if not grp:
+                                continue
+                            # Capacity is typically constant per warehouse; take first numeric capacity
+                            cap = 0.0
+                            for it in grp:
+                                if it.get("_n_capacity"):
+                                    cap = float(it["_n_capacity"])
+                                    break
+                            occ_sum = float(sum(it.get("_n_occupied_location") or 0 for it in grp))
+                            util_pct = int(round((occ_sum / cap) * 100)) if cap and cap > 0 else 0
+
+                            # Highest/Lowest Account based on occupied_location (lowest must be >0)
+                            by_acc_occ = []
+                            for it in grp:
+                                acc = (it.get("account") or "").strip()
+                                occ = float(it.get("_n_occupied_location") or 0)
+                                if acc:
+                                    by_acc_occ.append((acc, occ))
+                            high_acc_name, high_acc_val = ("—", 0)
+                            low_acc_name, low_acc_val = ("—", None)
+                            if by_acc_occ:
+                                by_acc_occ.sort(key=lambda x: (x[1], x[0]), reverse=True)
+                                high_acc_name, high_acc_val = by_acc_occ[0]
+                                pos = [x for x in by_acc_occ if x[1] > 0]
+                                if pos:
+                                    pos.sort(key=lambda x: (x[1], x[0]))
+                                    low_acc_name, low_acc_val = pos[0]
+
+                            # simple trend placeholders (same value across)
+                            trend_util = {
+                                "today": util_pct, "yesterday": util_pct, "day_before": util_pct,
+                                "y_today": 20, "y_yesterday": 20, "y_day_before": 20,
+                                "y_day_before_vert": 40, "y_yesterday_vert": 40, "y_today_vert": 40,
+                                "arrow_x1": 14, "arrow_x2": 26, "arrow_tip_y": 30, "arrow_base_y": 50,
+                            }
+                            warehouse_capacity_cards.append({
+                                "warehouse": wh,
+                                "utilization_pct": util_pct,
+                                "highest_account_name": high_acc_name or "—",
+                                "highest_account_count": int(round(high_acc_val or 0)),
+                                "lowest_account_name": low_acc_name or "—",
+                                "lowest_account_count": (int(round(low_acc_val)) if low_acc_val is not None else None),
+                                "trend_util": trend_util,
+                            })
+
+                        html = render_to_string(
+                            "components/ui-kits/tab-bootstrap/components/warehouse-overview-tab.html",
+                            {
+                                "totals": totals,
+                                "trend_totals": trend_totals,
+                                "table_rows": table_rows,
+                                "warehouse_names": warehouse_names,
+                                "account_names": account_names,
+                                "selected_warehouse": selected_warehouse,
+                                "selected_account": selected_account,
+                                "all_warehouse_names": all_warehouse_names,
+                                "all_account_names": all_account_names,
+                                "selected_day": "excel",
+                                "selected_date": tz_today,
+                                "available_dates": available_dates,
+                                "today_date": trend_base_date,
+                                "yesterday_date": yesterday_date,
+                                "day_before_yesterday_date": day_before_yesterday_date,
+                                "card_high_low": card_high_low,
+                                "warehouse_capacity_cards": warehouse_capacity_cards,
+                            },
+                            request=request,
+                        )
+                        return {"detail_html": html, "chart_data": []}
+            except Exception:
+                pass
+
+        # نفس منطق الأدمن بالضبط: قائمة الأيام من created_at عبر .dates()
         tz_today = timezone.now().date()
-        tz = timezone.get_current_timezone()
-        from django.db.models.functions import TruncDate
         available_dates = list(
-            WarehouseAccountOverview.objects.annotate(
-                day_date=TruncDate("created_at", tz=tz)
-            )
-            .values_list("day_date", flat=True)
-            .distinct()
-            .order_by("-day_date")
+            WarehouseAccountOverview.objects.dates("created_at", "day", order="DESC")
         )
         available_dates_set = {d for d in available_dates}
         last_import = WarehouseImportLog.objects.order_by("-imported_at").first()
@@ -3430,13 +3747,8 @@ class UploadExcelViewRoche(View):
             date_filter = last_data_date
             selected_day_value = last_data_date.strftime("%Y-%m-%d")
 
-        # فلتر باليوم بنفس نطاق التايمزون المستخدم في الأدمن (حتى النتائج متطابقة بعد الحذف)
-        tz = timezone.get_current_timezone()
-        start = timezone.make_aware(_dt.combine(date_filter, _dt.min.time()), tz)
-        end = start + timedelta(days=1)
-
-        # Base queryset for the selected day (+ optional WH) to populate dropdowns
-        base_qs = WarehouseAccountOverview.objects.filter(created_at__gte=start, created_at__lt=end)
+        # نفس الفلترة في الأدمن (created_at__date)
+        base_qs = WarehouseAccountOverview.objects.filter(created_at__date=date_filter)
         if selected_warehouse:
             base_qs = base_qs.filter(warehouse=selected_warehouse)
 
@@ -3451,7 +3763,9 @@ class UploadExcelViewRoche(View):
         raw_rows = list(
             qs.values(
                 "warehouse", "account", "capacity", "clearance", "inbound", "outbound",
-                "transportation", "occupied_location"
+                "transportation", "occupied_location",
+                "capacity_raw", "clearance_raw", "inbound_raw", "outbound_raw",
+                "transportation_raw", "occupied_location_raw",
             )
         )
         # تجاهل صفوف بدون مستودع/حساب؛ NULL في الأرقام مسموح (يعرض كـ No Data في الجدول)
@@ -3471,6 +3785,13 @@ class UploadExcelViewRoche(View):
             if not wh_name and not acc_name:
                 continue
             rows.append(r)
+
+        def _display_metric(row, raw_field, num_field):
+            raw_val = row.get(raw_field)
+            if raw_val is not None and str(raw_val).strip() != "":
+                return str(raw_val)
+            num_val = row.get(num_field)
+            return num_val
         agg = qs.aggregate(
             total_inbound=Sum("inbound"),
             total_outbound=Sum("outbound"),
@@ -3509,21 +3830,39 @@ class UploadExcelViewRoche(View):
         # أعلى وأقل مستودع (Warehouse) وأعلى وأقل Account لكل مقياس — للعرض: Highest Warehouse – Account: WH (count) – Acc (count)
         by_warehouse = {}
         by_account = {}
+        def _to_number(val):
+            """Coerce possible numeric-like values to float for comparisons/aggregation."""
+            if val is None:
+                return 0.0
+            if isinstance(val, (int, float, np.integer, np.floating)):
+                try:
+                    v = float(val)
+                    return 0.0 if (np.isnan(v) or np.isinf(v)) else v
+                except Exception:
+                    return 0.0
+            try:
+                s = str(val).strip()
+                if not s or s.lower() in ("nan", "none", "<nan>"):
+                    return 0.0
+                return float(s.replace(",", ""))
+            except Exception:
+                return 0.0
+
         for r in rows:
             wh = str(r.get("warehouse") or "").strip()
             acc = str(r.get("account") or "").strip()
             if wh not in by_warehouse:
                 by_warehouse[wh] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
-            by_warehouse[wh]["inbound"] += r.get("inbound") or 0
-            by_warehouse[wh]["outbound"] += r.get("outbound") or 0
-            by_warehouse[wh]["clearance"] += r.get("clearance") or 0
-            by_warehouse[wh]["transportation"] += r.get("transportation") or 0
+            by_warehouse[wh]["inbound"] += _to_number(r.get("inbound"))
+            by_warehouse[wh]["outbound"] += _to_number(r.get("outbound"))
+            by_warehouse[wh]["clearance"] += _to_number(r.get("clearance"))
+            by_warehouse[wh]["transportation"] += _to_number(r.get("transportation"))
             if acc not in by_account:
                 by_account[acc] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
-            by_account[acc]["inbound"] += r.get("inbound") or 0
-            by_account[acc]["outbound"] += r.get("outbound") or 0
-            by_account[acc]["clearance"] += r.get("clearance") or 0
-            by_account[acc]["transportation"] += r.get("transportation") or 0
+            by_account[acc]["inbound"] += _to_number(r.get("inbound"))
+            by_account[acc]["outbound"] += _to_number(r.get("outbound"))
+            by_account[acc]["clearance"] += _to_number(r.get("clearance"))
+            by_account[acc]["transportation"] += _to_number(r.get("transportation"))
 
         def _pick_lowest(items):
             """Pick the absolute lowest value (may include 0)."""
@@ -3537,10 +3876,10 @@ class UploadExcelViewRoche(View):
             """Pick the lowest value > 0. If none exist, return (None, None)."""
             if not items:
                 return None, None
-            positive = [it for it in items if (it[1] or 0) > 0]
+            positive = [it for it in items if _to_number(it[1]) > 0]
             if not positive:
                 return None, None
-            positive.sort(key=lambda x: (x[1], x[0]))
+            positive.sort(key=lambda x: (_to_number(x[1]), x[0]))
             return positive[0]
 
         def _high_low_wh(metric_key):
@@ -3550,7 +3889,7 @@ class UploadExcelViewRoche(View):
             if not items:
                 return None, 0, None, None
             # Highest: largest value then name
-            items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+            items_sorted = sorted(items, key=lambda x: (_to_number(x[1]), x[0]), reverse=True)
             high_w, high_v = items_sorted[0]
             low_w, low_v = _pick_lowest_positive(items)
             return high_w, high_v, low_w, low_v
@@ -3561,7 +3900,7 @@ class UploadExcelViewRoche(View):
             items = [(a, by_account[a][metric_key]) for a in by_account if str(a).strip()]
             if not items:
                 return None, 0, None, None
-            items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+            items_sorted = sorted(items, key=lambda x: (_to_number(x[1]), x[0]), reverse=True)
             high_a, high_v = items_sorted[0]
             low_a, low_v = _pick_lowest_positive(items)
             return high_a, high_v, low_a, low_v
@@ -3569,6 +3908,11 @@ class UploadExcelViewRoche(View):
         def _merge_metric(metric_key):
             hw, hwv, lw, lwv = _high_low_wh(metric_key)
             ha, hav, la, lav = _high_low_acc(metric_key)
+            # Never show zero as "lowest"; keep only strictly positive lowest values.
+            if lwv is not None and _to_number(lwv) <= 0:
+                lw, lwv = None, None
+            if lav is not None and _to_number(lav) <= 0:
+                la, lav = None, None
             return {
                 "high_warehouse": hw, "high_warehouse_value": hwv,
                 "low_warehouse": lw, "low_warehouse_value": lwv,
@@ -3600,7 +3944,7 @@ class UploadExcelViewRoche(View):
             if wh != prev_wh:
                 if group_count > 0:
                     first_in_group = len(table_rows) - group_count
-                    group_capacity = table_rows[first_in_group].get("capacity")
+                    group_capacity = table_rows[first_in_group].get("capacity_display")
                     for j in range(first_in_group, len(table_rows)):
                         if j == first_in_group:
                             table_rows[j]["warehouse_rowspan"] = group_count
@@ -3617,6 +3961,12 @@ class UploadExcelViewRoche(View):
             else:
                 group_count += 1
             r["row_bg"] = row_bg
+            r["capacity_display"] = _display_metric(r, "capacity_raw", "capacity")
+            r["clearance_display"] = _display_metric(r, "clearance_raw", "clearance")
+            r["inbound_display"] = _display_metric(r, "inbound_raw", "inbound")
+            r["outbound_display"] = _display_metric(r, "outbound_raw", "outbound")
+            r["transportation_display"] = _display_metric(r, "transportation_raw", "transportation")
+            r["occupied_location_display"] = _display_metric(r, "occupied_location_raw", "occupied_location")
             # Utilization % = (Occupied Location / Capacity) * 100 (NULL ≠ 0)
             cap = r.get("capacity")
             occ = r.get("occupied_location")
@@ -3627,7 +3977,7 @@ class UploadExcelViewRoche(View):
             table_rows.append(r)
         if group_count > 0:
             first_in_group = len(table_rows) - group_count
-            group_capacity = table_rows[first_in_group].get("capacity")
+            group_capacity = table_rows[first_in_group].get("capacity_display")
             for j in range(first_in_group, len(table_rows)):
                 if j == first_in_group:
                     table_rows[j]["warehouse_rowspan"] = group_count

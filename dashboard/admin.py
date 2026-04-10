@@ -131,16 +131,16 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
     list_display = (
         "warehouse",
         "account",
-        "capacity",
-        "clearance",
-        "inbound",
-        "outbound",
-        "transportation",
-        "occupied_location",
+        "capacity_display",
+        "clearance_display",
+        "inbound_display",
+        "outbound_display",
+        "transportation_display",
+        "occupied_location_display",
         "updated_at",
         "created_at",
     )
-    list_editable = ("capacity", "inbound", "outbound", "clearance", "occupied_location", "transportation", "created_at")
+    list_editable = ("created_at",)
     list_filter = ("warehouse", WarehouseDayFilter)  # لا نضيف created_at لتفادي تعارضه مع فلتر Day
     search_fields = ("warehouse", "account")
     ordering = ("warehouse", "account")
@@ -159,6 +159,43 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
             if fname in form.base_fields:
                 form.base_fields[fname].required = False
         return form
+
+    @staticmethod
+    def _display_metric(obj, raw_field, num_field):
+        raw_val = getattr(obj, raw_field, None)
+        if raw_val is not None and str(raw_val).strip() != "":
+            return raw_val
+        return getattr(obj, num_field, None)
+
+    def capacity_display(self, obj):
+        return self._display_metric(obj, "capacity_raw", "capacity")
+
+    capacity_display.short_description = "Capacity"
+
+    def clearance_display(self, obj):
+        return self._display_metric(obj, "clearance_raw", "clearance")
+
+    clearance_display.short_description = "Clearance"
+
+    def inbound_display(self, obj):
+        return self._display_metric(obj, "inbound_raw", "inbound")
+
+    inbound_display.short_description = "Inbound"
+
+    def outbound_display(self, obj):
+        return self._display_metric(obj, "outbound_raw", "outbound")
+
+    outbound_display.short_description = "Outbound"
+
+    def transportation_display(self, obj):
+        return self._display_metric(obj, "transportation_raw", "transportation")
+
+    transportation_display.short_description = "Transportation"
+
+    def occupied_location_display(self, obj):
+        return self._display_metric(obj, "occupied_location_raw", "occupied_location")
+
+    occupied_location_display.short_description = "Occupied Location"
 
     def changelist_view(self, request, extra_context=None):
         # لو warehouse__exact فاضي في الرابط، نوجّه بدونه حتى يظهر كل الشيت لليوم (كل المستودعات)
@@ -272,6 +309,15 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                 except (ValueError, TypeError):
                     return None
 
+            def excel_raw(val):
+                """قيمة الإكسل الأصلية للنص/الرقم للعرض كما هي."""
+                if val is None or (isinstance(val, float) and pd.isna(val)):
+                    return None
+                s = str(val).strip()
+                if not s or s.lower() in ("nan", "none", "<nan>"):
+                    return None
+                return s
+
             # تاريخ البيانات (حتى يمكن رفع ملف لليوم أو الأمس أو أي تاريخ قديم)
             effective_date_str = (request.POST.get("effective_date") or "").strip()
             try:
@@ -363,11 +409,17 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                     warehouse=w or "—",
                     account=a or "—",
                     capacity=excel_metric(row.get(col_map.get("capacity"))),
+                    capacity_raw=excel_raw(row.get(col_map.get("capacity"))),
                     clearance=excel_metric(row.get(col_map.get("clearance"))),
+                    clearance_raw=excel_raw(row.get(col_map.get("clearance"))),
                     inbound=excel_metric(row.get(col_map.get("inbound"))),
+                    inbound_raw=excel_raw(row.get(col_map.get("inbound"))),
                     outbound=excel_metric(row.get(col_map.get("outbound"))),
+                    outbound_raw=excel_raw(row.get(col_map.get("outbound"))),
                     transportation=excel_metric(row.get(col_map.get("transportation"))),
+                    transportation_raw=excel_raw(row.get(col_map.get("transportation"))),
                     occupied_location=excel_metric(row.get(col_map.get("occupied_location"))),
+                    occupied_location_raw=excel_raw(row.get(col_map.get("occupied_location"))),
                     created_at=effective_datetime,
                 )
                 created += 1

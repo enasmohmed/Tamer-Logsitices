@@ -97,11 +97,17 @@ class WarehouseAccountOverview(models.Model):
     warehouse = models.CharField(max_length=255, db_index=True)
     account = models.CharField(max_length=255, db_index=True)
     capacity = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    capacity_raw = models.CharField(max_length=255, blank=True, null=True)
     clearance = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    clearance_raw = models.CharField(max_length=255, blank=True, null=True)
     inbound = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    inbound_raw = models.CharField(max_length=255, blank=True, null=True)
     outbound = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    outbound_raw = models.CharField(max_length=255, blank=True, null=True)
     transportation = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    transportation_raw = models.CharField(max_length=255, blank=True, null=True)
     occupied_location = models.PositiveIntegerField(default=0,  blank=True, null=True)
+    occupied_location_raw = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now,  blank=True, null=True)  # قابل للتعديل لإضافة/تعديل تاريخ الداتا
     updated_at = models.DateTimeField(auto_now=True,  blank=True, null=True)
 
