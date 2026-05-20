@@ -3556,6 +3556,12 @@ class UploadExcelViewRoche(View):
                             "inbound": _merge("inbound"),
                             "outbound": _merge("outbound"),
                             "transportation": _merge("transportation"),
+                            "pods": {
+                                "high_warehouse": None, "high_warehouse_value": 0,
+                                "low_warehouse": None, "low_warehouse_value": None,
+                                "high_account": None, "high_account_value": 0,
+                                "low_account": None, "low_account_value": None,
+                            },
                         }
 
                         # Build table_rows with rowspan logic; keep raw display values
@@ -3626,6 +3632,7 @@ class UploadExcelViewRoche(View):
                             "inbound": {"today": totals["total_inbound"], "yesterday": totals["total_inbound"], "day_before": totals["total_inbound"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
                             "outbound": {"today": totals["total_outbound"], "yesterday": totals["total_outbound"], "day_before": totals["total_outbound"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
                             "transportation": {"today": totals["total_transportation"], "yesterday": totals["total_transportation"], "day_before": totals["total_transportation"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
+                            "pods": {"today": totals["total_pods"], "yesterday": totals["total_pods"], "day_before": totals["total_pods"], "max": 1, "y_today": 20, "y_yesterday": 20, "y_day_before": 20},
                         }
                         # Capacity & Utilization cards (computed from same Excel rows)
                         warehouse_capacity_cards = []
@@ -3925,6 +3932,12 @@ class UploadExcelViewRoche(View):
             "inbound": _merge_metric("inbound"),
             "outbound": _merge_metric("outbound"),
             "transportation": _merge_metric("transportation"),
+            "pods": {
+                "high_warehouse": None, "high_warehouse_value": 0,
+                "low_warehouse": None, "low_warehouse_value": None,
+                "high_account": None, "high_account_value": 0,
+                "low_account": None, "low_account_value": None,
+            },
         }
         # تحضير الصفوف مع دمج خلايا Warehouse + تناوب لون الخلفية + بادج للـ Account (رمادي فاتح / بينك)
         table_rows = []
@@ -4122,6 +4135,7 @@ class UploadExcelViewRoche(View):
             "inbound": _trend_metric(trend_today["inbound"], trend_yesterday["inbound"], trend_day_before["inbound"]),
             "outbound": _trend_metric(trend_today["outbound"], trend_yesterday["outbound"], trend_day_before["outbound"]),
             "transportation": _trend_metric(trend_today["transportation"], trend_yesterday["transportation"], trend_day_before["transportation"]),
+            "pods": _trend_metric(totals["total_pods"], totals["total_pods"], totals["total_pods"]),
         }
 
         html = render_to_string(
