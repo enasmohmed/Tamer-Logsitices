@@ -108,6 +108,9 @@ class WarehouseAccountOverviewChangelistForm(forms.ModelForm):
     def clean_transportation(self):
         return _clean_metric(self.cleaned_data.get("transportation"))
 
+    def clean_pods(self):
+        return _clean_metric(self.cleaned_data.get("pods"))
+
     def clean_occupied_location(self):
         return _clean_metric(self.cleaned_data.get("occupied_location"))
 
@@ -136,6 +139,7 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
         "inbound_display",
         "outbound_display",
         "transportation_display",
+        "pods_display",
         "occupied_location_display",
         "updated_at",
         "created_at",
@@ -149,13 +153,13 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
     form = WarehouseAccountOverviewChangelistForm
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name in ("capacity", "clearance", "inbound", "outbound", "transportation", "occupied_location"):
+        if db_field.name in ("capacity", "clearance", "inbound", "outbound", "transportation", "pods", "occupied_location"):
             kwargs["widget"] = ZeroAsNoDataInput()
         return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     def get_changelist_form(self, request, **kwargs):
         form = super().get_changelist_form(request, **kwargs)
-        for fname in ("capacity", "clearance", "inbound", "outbound", "transportation", "occupied_location"):
+        for fname in ("capacity", "clearance", "inbound", "outbound", "transportation", "pods", "occupied_location"):
             if fname in form.base_fields:
                 form.base_fields[fname].required = False
         return form
@@ -191,6 +195,11 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
         return self._display_metric(obj, "transportation_raw", "transportation")
 
     transportation_display.short_description = "Transportation"
+
+    def pods_display(self, obj):
+        return self._display_metric(obj, "pods_raw", "pods")
+
+    pods_display.short_description = "PODs"
 
     def occupied_location_display(self, obj):
         return self._display_metric(obj, "occupied_location_raw", "occupied_location")
@@ -381,6 +390,8 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                     col_map["occupied_location"] = c
                 elif (not col_map.get("transportation") and ("transport" in c_lower or c_lower == "transportaion")):
                     col_map["transportation"] = c
+                elif (not col_map.get("pods") and c_lower in ("pods", "pod")):
+                    col_map["pods"] = c
             if "warehouse" not in col_map or "account" not in col_map:
                 messages.error(request, "The sheet must contain at least two columns: Warehouse (or WHs) and Account.")
                 return redirect("admin:dashboard_warehouseaccountoverview_import")
@@ -418,6 +429,8 @@ class WarehouseAccountOverviewAdmin(admin.ModelAdmin):
                     outbound_raw=excel_raw(row.get(col_map.get("outbound"))),
                     transportation=excel_metric(row.get(col_map.get("transportation"))),
                     transportation_raw=excel_raw(row.get(col_map.get("transportation"))),
+                    pods=excel_metric(row.get(col_map.get("pods"))),
+                    pods_raw=excel_raw(row.get(col_map.get("pods"))),
                     occupied_location=excel_metric(row.get(col_map.get("occupied_location"))),
                     occupied_location_raw=excel_raw(row.get(col_map.get("occupied_location"))),
                     created_at=effective_datetime,

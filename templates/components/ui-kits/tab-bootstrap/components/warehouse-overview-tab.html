@@ -698,26 +698,26 @@
                 <path d="M4 1.5A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V5.707a1.5 1.5 0 0 0-.44-1.06l-3.707-3.706A1.5 1.5 0 0 0 9.293 1.5H4zm5 .707V5a1 1 0 0 0 1 1h2.793L9 2.207z"/>
               </svg>
             </div>
-            <span class="card-value">{% if totals.total_pods is not None %}{{ totals.total_pods }}{% else %}No Data{% endif %}</span>
+            <span class="card-value">{% if totals.total_pods is not None %}{{ totals.total_pods|floatformat:"0" }}{% else %}No Data{% endif %}</span>
           </div>
           <p class="warehouse-kpi-card-hint mb-0">Hover for trend & details</p>
           <div class="card-high-low" style="display: block;">
             <strong>Highest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.pods.high_warehouse|default:"-" }} ({{ card_high_low.pods.high_warehouse_value|default:0 }})
+                {{ card_high_low.pods.high_warehouse|default:"-" }} ({{ card_high_low.pods.high_warehouse_value|default:0|floatformat:"0" }})
               </li>
               <li>
-                {{ card_high_low.pods.high_account|default:"-" }} ({{ card_high_low.pods.high_account_value|default:0 }})
+                {{ card_high_low.pods.high_account|default:"-" }} ({{ card_high_low.pods.high_account_value|default:0|floatformat:"0" }})
               </li>
             </ul>
             <strong>Lowest Warehouse – Account:</strong>
             <ul class="mb-0" style="list-style: disc inside; padding-left: 0.8em;">
               <li>
-                {{ card_high_low.pods.low_warehouse|default:"-" }} ({% if card_high_low.pods.low_warehouse_value is not None and card_high_low.pods.low_warehouse_value != '' %}{{ card_high_low.pods.low_warehouse_value }}{% else %}-{% endif %})
+                {{ card_high_low.pods.low_warehouse|default:"-" }} ({% if card_high_low.pods.low_warehouse_value is not None and card_high_low.pods.low_warehouse_value != '' %}{{ card_high_low.pods.low_warehouse_value|floatformat:"0" }}{% else %}-{% endif %})
               </li>
               <li>
-                {{ card_high_low.pods.low_account|default:"-" }} ({% if card_high_low.pods.low_account_value is not None and card_high_low.pods.low_account_value != '' %}{{ card_high_low.pods.low_account_value }}{% else %}-{% endif %})
+                {{ card_high_low.pods.low_account|default:"-" }} ({% if card_high_low.pods.low_account_value is not None and card_high_low.pods.low_account_value != '' %}{{ card_high_low.pods.low_account_value|floatformat:"0" }}{% else %}-{% endif %})
               </li>
             </ul>
           </div>
@@ -733,9 +733,9 @@
                 </svg>
               </div>
               <div class="warehouse-trend-labels">
-                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.day_before }}</strong></span>
-                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.yesterday }}</strong></span>
-                <span>{{ today_date|date:"Y-m-d" }} <strong>{{ trend_totals.pods.today }}</strong></span>
+                <span>{{ day_before_yesterday_date|date:"Y-m-d" }} <strong>{% if trend_totals.pods.day_before is not None %}{{ trend_totals.pods.day_before|floatformat:"0" }}{% else %}-{% endif %}</strong></span>
+                <span>{{ yesterday_date|date:"Y-m-d" }} <strong>{% if trend_totals.pods.yesterday is not None %}{{ trend_totals.pods.yesterday|floatformat:"0" }}{% else %}-{% endif %}</strong></span>
+                <span>{{ today_date|date:"Y-m-d" }} <strong>{% if trend_totals.pods.today is not None %}{{ trend_totals.pods.today|floatformat:"0" }}{% else %}-{% endif %}</strong></span>
               </div>
             </div>
           </div>
@@ -978,6 +978,7 @@
             <th>Inbound</th>
             <th>Outbound</th>
             <th>Transportation</th>
+            <th>PODs</th>
             <th>Occupied Location</th>
             <th>Utilization %</th>
           </tr>
@@ -996,6 +997,7 @@
             <td>{% if row.inbound_display is not None and row.inbound_display != '' %}{{ row.inbound_display }}{% else %}&nbsp;{% endif %}</td>
             <td>{% if row.outbound_display is not None and row.outbound_display != '' %}{{ row.outbound_display }}{% else %}&nbsp;{% endif %}</td>
             <td>{% if row.transportation_display is not None and row.transportation_display != '' %}{{ row.transportation_display }}{% else %}&nbsp;{% endif %}</td>
+            <td>{% if row.pods_display is not None and row.pods_display != '' %}{{ row.pods_display|floatformat:"0" }}{% else %}&nbsp;{% endif %}</td>
             <td>{% if row.occupied_location_display is not None and row.occupied_location_display != '' %}{{ row.occupied_location_display }}{% else %}&nbsp;{% endif %}</td>
             <td class="align-middle">
               {% if row.utilization_pct is not None and row.utilization_pct != '' %}
@@ -1012,12 +1014,12 @@
           </tr>
           {% empty %}
           <tr class="warehouse-empty-row">
-            <td colspan="9" class="text-muted py-4">No data available. Please upload an Excel file from the admin panel (Warehouse and Account Overview → Import from Excel).</td>
+            <td colspan="10" class="text-muted py-4">No data available. Please upload an Excel file from the admin panel (Warehouse and Account Overview → Import from Excel).</td>
           </tr>
           {% endfor %}
           {% if table_rows %}
           <tr id="warehouse-no-match-row" style="display: none;">
-            <td colspan="9" class="text-muted py-4">No matching rows for the selected filters.</td>
+            <td colspan="10" class="text-muted py-4">No matching rows for the selected filters.</td>
           </tr>
           {% endif %}
         </tbody>

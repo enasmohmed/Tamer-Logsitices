@@ -909,6 +909,133 @@ def _read_pods_data_from_excel(excel_path):
     }
 
 
+def _get_warehouse_pods_stats_from_sheet(
+    excel_path,
+    selected_warehouse=None,
+    selected_account=None,
+):
+    """
+    إحصائيات PODs من عمود PODs في شيت Warehouse (Werehouse / Sheet1 / Da-tamer)
+    — نفس مصدر Inbound و Outbound.
+    """
+    if not excel_path or not os.path.exists(excel_path):
+        return None
+    try:
+        xls = pd.ExcelFile(excel_path, engine="openpyxl")
+    except Exception:
+        return None
+    sheet_names = list(xls.sheet_names or [])
+    sheet_lower = {str(s).strip().lower(): s for s in sheet_names}
+    sheet_name = (
+        sheet_lower.get("da-tamer")
+        or sheet_lower.get("da tamer")
+        or sheet_lower.get("sheet1")
+        or sheet_lower.get("werehouse")
+        or sheet_lower.get("warehouse")
+        or (sheet_names[0] if sheet_names else None)
+    )
+    if not sheet_name:
+        return None
+    try:
+        df = pd.read_excel(excel_path, sheet_name=sheet_name, engine="openpyxl")
+    except Exception:
+        return None
+    if df.empty:
+        return {"total": 0, "high_low": _empty_pods_high_low()}
+
+    df.columns = [str(c).strip() for c in df.columns]
+    col_map = {}
+    for c in df.columns:
+        c_lower = c.lower().strip().replace(" ", "_").replace("-", "_")
+        if not col_map.get("warehouse") and (
+            c_lower in ("warehouse", "whs", "wh") or "warehouse" in c_lower
+        ):
+            col_map["warehouse"] = c
+        elif c_lower == "account" or (not col_map.get("account") and "account" in c_lower):
+            col_map["account"] = c
+        elif not col_map.get("pods") and c_lower in ("pods", "pod"):
+            col_map["pods"] = c
+    if "pods" not in col_map or "warehouse" not in col_map or "account" not in col_map:
+        return None
+
+    wh_col = col_map["warehouse"]
+    df[wh_col] = df[wh_col].replace("", None).ffill().fillna("")
+
+    def _to_num(v):
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return 0.0
+        try:
+            s = str(v).strip().replace(",", "")
+            if not s or s.lower() in ("nan", "none", "<nan>", "-"):
+                return 0.0
+            return float(s)
+        except Exception:
+            return 0.0
+
+    rows = []
+    for _, row in df.iterrows():
+        w = str(row.get(col_map["warehouse"], "") or "").strip()
+        a = str(row.get(col_map["account"], "") or "").strip()
+        if not w and not a:
+            continue
+        if a.lower() == "account" or w.lower() in ("whs", "warehouse", "account"):
+            continue
+        pods_val = int(round(_to_num(row.get(col_map["pods"]))))
+        rows.append({"warehouse": w, "account": a, "pods": pods_val})
+
+    if selected_warehouse:
+        rows = [r for r in rows if r["warehouse"] == selected_warehouse]
+    if selected_account:
+        rows = [r for r in rows if r["account"] == selected_account]
+
+    total = int(round(sum(r["pods"] for r in rows)))
+
+    by_wh, by_acc = {}, {}
+    for r in rows:
+        by_wh[r["warehouse"]] = by_wh.get(r["warehouse"], 0) + r["pods"]
+        by_acc[r["account"]] = by_acc.get(r["account"], 0) + r["pods"]
+
+    def _high_low_from_counts(counts_map):
+        items = [(k, v) for k, v in counts_map.items() if str(k).strip() and v > 0]
+        if not items:
+            return None, 0, None, None
+        items_sorted = sorted(items, key=lambda x: (x[1], x[0]), reverse=True)
+        high_k, high_v = items_sorted[0]
+        positive = sorted(items, key=lambda x: (x[1], x[0]))
+        low_k, low_v = positive[0]
+        return high_k, high_v, low_k, low_v
+
+    hw, hwv, lw, lwv = _high_low_from_counts(by_wh)
+    ha, hav, la, lav = _high_low_from_counts(by_acc)
+    return {
+        "total": total,
+        "high_low": {
+            "high_warehouse": hw,
+            "high_warehouse_value": int(hwv or 0),
+            "low_warehouse": lw,
+            "low_warehouse_value": (int(lwv) if lwv is not None else None),
+            "high_account": ha,
+            "high_account_value": int(hav or 0),
+            "low_account": la,
+            "low_account_value": (int(lav) if lav is not None else None),
+        },
+        "rows": rows,
+    }
+
+
+def _empty_pods_high_low():
+    return {
+        "high_warehouse": None,
+        "high_warehouse_value": 0,
+        "low_warehouse": None,
+        "low_warehouse_value": None,
+        "high_account": None,
+        "high_account_value": 0,
+        "low_account": None,
+        "low_account_value": None,
+    }
+
+
 def _read_returns_data_from_excel(excel_path):
     """
     يقرأ من شيت Return (أو Returns):
@@ -3430,6 +3557,7 @@ class UploadExcelViewRoche(View):
                     c_in = _find_col("inbound")
                     c_out = _find_col("outbound")
                     c_tr = _find_col("transportation", "transportaion", "trucks")
+                    c_pods = _find_col("pods", "pod")
                     c_occ = _find_col("occupied location", "occupied_location", "occupied", "occupiedlocation")
 
                     if c_wh and c_acc:
@@ -3469,6 +3597,7 @@ class UploadExcelViewRoche(View):
                                 "inbound": _raw(r.get(c_in)) if c_in else "",
                                 "outbound": _raw(r.get(c_out)) if c_out else "",
                                 "transportation": _raw(r.get(c_tr)) if c_tr else "",
+                                "pods": _raw(r.get(c_pods)) if c_pods else "",
                                 "occupied_location": _raw(r.get(c_occ)) if c_occ else "",
                             }
                             # numeric versions for calculations
@@ -3477,6 +3606,7 @@ class UploadExcelViewRoche(View):
                             row["_n_inbound"] = _to_num(r.get(c_in)) if c_in else 0.0
                             row["_n_outbound"] = _to_num(r.get(c_out)) if c_out else 0.0
                             row["_n_transportation"] = _to_num(r.get(c_tr)) if c_tr else 0.0
+                            row["_n_pods"] = _to_num(r.get(c_pods)) if c_pods else 0.0
                             row["_n_occupied_location"] = _to_num(r.get(c_occ)) if c_occ else 0.0
                             rows_raw.append(row)
 
@@ -3506,7 +3636,7 @@ class UploadExcelViewRoche(View):
                             "total_outbound": int(round(sum(r["_n_outbound"] for r in rows_raw))),
                             "total_clearance": int(round(sum(r["_n_clearance"] for r in rows_raw))),
                             "total_transportation": int(round(sum(r["_n_transportation"] for r in rows_raw))),
-                            "total_pods": None,
+                            "total_pods": int(round(sum(r["_n_pods"] for r in rows_raw))),
                         }
 
                         # High/Low (lowest must be >0)
@@ -3514,16 +3644,18 @@ class UploadExcelViewRoche(View):
                         for r in rows_raw:
                             wh = r["warehouse"]
                             acc = r["account"]
-                            by_warehouse.setdefault(wh, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0})
-                            by_account.setdefault(acc, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0})
+                            by_warehouse.setdefault(wh, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0, "pods": 0.0})
+                            by_account.setdefault(acc, {"inbound": 0.0, "outbound": 0.0, "clearance": 0.0, "transportation": 0.0, "pods": 0.0})
                             by_warehouse[wh]["inbound"] += r["_n_inbound"]
                             by_warehouse[wh]["outbound"] += r["_n_outbound"]
                             by_warehouse[wh]["clearance"] += r["_n_clearance"]
                             by_warehouse[wh]["transportation"] += r["_n_transportation"]
+                            by_warehouse[wh]["pods"] += r["_n_pods"]
                             by_account[acc]["inbound"] += r["_n_inbound"]
                             by_account[acc]["outbound"] += r["_n_outbound"]
                             by_account[acc]["clearance"] += r["_n_clearance"]
                             by_account[acc]["transportation"] += r["_n_transportation"]
+                            by_account[acc]["pods"] += r["_n_pods"]
 
                         def _low_pos(items):
                             pos = [(k, v) for k, v in items if float(v or 0) > 0]
@@ -3556,12 +3688,7 @@ class UploadExcelViewRoche(View):
                             "inbound": _merge("inbound"),
                             "outbound": _merge("outbound"),
                             "transportation": _merge("transportation"),
-                            "pods": {
-                                "high_warehouse": None, "high_warehouse_value": 0,
-                                "low_warehouse": None, "low_warehouse_value": None,
-                                "high_account": None, "high_account_value": 0,
-                                "low_account": None, "low_account_value": None,
-                            },
+                            "pods": _merge("pods"),
                         }
 
                         # Build table_rows with rowspan logic; keep raw display values
@@ -3576,6 +3703,7 @@ class UploadExcelViewRoche(View):
                                 "inbound": r["inbound"],
                                 "outbound": r["outbound"],
                                 "transportation": r["transportation"],
+                                "pods": r.get("pods", ""),
                                 "occupied_location": r["occupied_location"],
                             }
                             acc = rr["account"]
@@ -3607,6 +3735,7 @@ class UploadExcelViewRoche(View):
                             cap_n = r["_n_capacity"]
                             occ_n = r["_n_occupied_location"]
                             rr["utilization_pct"] = round((occ_n / cap_n) * 100, 1) if cap_n and cap_n > 0 else None
+                            rr["pods_display"] = int(round(r.get("_n_pods", 0) or 0))
                             table_rows.append(rr)
                         if group_count > 0:
                             first = len(table_rows) - group_count
@@ -3770,9 +3899,9 @@ class UploadExcelViewRoche(View):
         raw_rows = list(
             qs.values(
                 "warehouse", "account", "capacity", "clearance", "inbound", "outbound",
-                "transportation", "occupied_location",
+                "transportation", "pods", "occupied_location",
                 "capacity_raw", "clearance_raw", "inbound_raw", "outbound_raw",
-                "transportation_raw", "occupied_location_raw",
+                "transportation_raw", "pods_raw", "occupied_location_raw",
             )
         )
         # تجاهل صفوف بدون مستودع/حساب؛ NULL في الأرقام مسموح (يعرض كـ No Data في الجدول)
@@ -3799,16 +3928,37 @@ class UploadExcelViewRoche(View):
                 return str(raw_val)
             num_val = row.get(num_field)
             return num_val
+
+        def _display_pods(row, raw_field="pods_raw", num_field="pods"):
+            """PODs دائماً عدد صحيح (بدون كسور عشرية)."""
+            raw_val = row.get(raw_field)
+            if raw_val is not None and str(raw_val).strip() != "":
+                s = str(raw_val).strip().replace(",", "")
+                try:
+                    return int(round(float(s)))
+                except (ValueError, TypeError):
+                    return str(raw_val).strip()
+            num_val = row.get(num_field)
+            if num_val is None:
+                return None
+            try:
+                return int(round(float(num_val)))
+            except (ValueError, TypeError):
+                return None
         agg = qs.aggregate(
             total_inbound=Sum("inbound"),
             total_outbound=Sum("outbound"),
             total_clearance=Sum("clearance"),
             total_transportation=Sum("transportation"),
+            total_pods=Sum("pods"),
         )
         total_inbound = agg["total_inbound"]
         total_outbound = agg["total_outbound"]
         total_clearance = agg["total_clearance"]
         total_transportation = agg["total_transportation"]
+        total_pods = agg["total_pods"]
+        if total_pods is not None:
+            total_pods = int(total_pods)
 
         # أسماء المستودعات بنفس ترتيب ظهورها (بدون ترتيب أبجدي)
         warehouse_names = []
@@ -3832,7 +3982,7 @@ class UploadExcelViewRoche(View):
             "total_outbound": total_outbound,
             "total_clearance": total_clearance,
             "total_transportation": total_transportation,
-            "total_pods": None,
+            "total_pods": total_pods,
         }
         # أعلى وأقل مستودع (Warehouse) وأعلى وأقل Account لكل مقياس — للعرض: Highest Warehouse – Account: WH (count) – Acc (count)
         by_warehouse = {}
@@ -3859,17 +4009,19 @@ class UploadExcelViewRoche(View):
             wh = str(r.get("warehouse") or "").strip()
             acc = str(r.get("account") or "").strip()
             if wh not in by_warehouse:
-                by_warehouse[wh] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
+                by_warehouse[wh] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0, "pods": 0}
             by_warehouse[wh]["inbound"] += _to_number(r.get("inbound"))
             by_warehouse[wh]["outbound"] += _to_number(r.get("outbound"))
             by_warehouse[wh]["clearance"] += _to_number(r.get("clearance"))
             by_warehouse[wh]["transportation"] += _to_number(r.get("transportation"))
+            by_warehouse[wh]["pods"] += _to_number(r.get("pods"))
             if acc not in by_account:
-                by_account[acc] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0}
+                by_account[acc] = {"inbound": 0, "outbound": 0, "clearance": 0, "transportation": 0, "pods": 0}
             by_account[acc]["inbound"] += _to_number(r.get("inbound"))
             by_account[acc]["outbound"] += _to_number(r.get("outbound"))
             by_account[acc]["clearance"] += _to_number(r.get("clearance"))
             by_account[acc]["transportation"] += _to_number(r.get("transportation"))
+            by_account[acc]["pods"] += _to_number(r.get("pods"))
 
         def _pick_lowest(items):
             """Pick the absolute lowest value (may include 0)."""
@@ -3932,13 +4084,25 @@ class UploadExcelViewRoche(View):
             "inbound": _merge_metric("inbound"),
             "outbound": _merge_metric("outbound"),
             "transportation": _merge_metric("transportation"),
-            "pods": {
-                "high_warehouse": None, "high_warehouse_value": 0,
-                "low_warehouse": None, "low_warehouse_value": None,
-                "high_account": None, "high_account_value": 0,
-                "low_account": None, "low_account_value": None,
-            },
+            "pods": _merge_metric("pods"),
         }
+        # إن لم تُستورد PODs بعد: اقرأ من عمود PODs في ملف الإكسل (شيت Warehouse)
+        sheet_pods = None
+        has_any_pods_value = any(_to_number(r.get("pods")) > 0 for r in rows)
+        if not has_any_pods_value:
+            excel_path_wh = (
+                self.get_main_dashboard_excel_path(request)
+                or self.get_uploaded_file_path(request)
+                or self.get_excel_path()
+            )
+            sheet_pods = _get_warehouse_pods_stats_from_sheet(
+                excel_path_wh,
+                selected_warehouse=selected_warehouse,
+                selected_account=selected_account,
+            )
+            if sheet_pods is not None:
+                totals["total_pods"] = sheet_pods["total"]
+                card_high_low["pods"] = sheet_pods["high_low"]
         # تحضير الصفوف مع دمج خلايا Warehouse + تناوب لون الخلفية + بادج للـ Account (رمادي فاتح / بينك)
         table_rows = []
         prev_wh = None
@@ -3979,6 +4143,7 @@ class UploadExcelViewRoche(View):
             r["inbound_display"] = _display_metric(r, "inbound_raw", "inbound")
             r["outbound_display"] = _display_metric(r, "outbound_raw", "outbound")
             r["transportation_display"] = _display_metric(r, "transportation_raw", "transportation")
+            r["pods_display"] = _display_pods(r)
             r["occupied_location_display"] = _display_metric(r, "occupied_location_raw", "occupied_location")
             # Utilization % = (Occupied Location / Capacity) * 100 (NULL ≠ 0)
             cap = r.get("capacity")
@@ -4000,6 +4165,17 @@ class UploadExcelViewRoche(View):
                 else:
                     table_rows[j]["warehouse_rowspan"] = 0
                     table_rows[j]["capacity_rowspan"] = 0
+        # PODs لكل صف من الإكسل إن لم تُستورد بعد في قاعدة البيانات
+        if sheet_pods and sheet_pods.get("rows"):
+            pods_map = {
+                (str(pr["warehouse"]).strip(), str(pr["account"]).strip()): pr["pods"]
+                for pr in sheet_pods["rows"]
+            }
+            for tr in table_rows:
+                wh = str(tr.get("warehouse") or "").strip()
+                acc = str(tr.get("account") or "").strip()
+                if (wh, acc) in pods_map:
+                    tr["pods_display"] = pods_map[(wh, acc)]
         # قائمة كل المستودعات (للقائمة المنسدلة) — من كل الداتا بدون فلتر اليوم، مع الحفاظ على ترتيب الإدخال
         all_warehouse_names = []
         seen_all_wh = set()
@@ -4104,17 +4280,27 @@ class UploadExcelViewRoche(View):
                 total_inbound=Sum("inbound"),
                 total_outbound=Sum("outbound"),
                 total_transportation=Sum("transportation"),
+                total_pods=Sum("pods"),
             )
             return {
                 "clearance": a["total_clearance"],
                 "inbound": a["total_inbound"],
                 "outbound": a["total_outbound"],
                 "transportation": a["total_transportation"],
+                "pods": a["total_pods"],
             }
 
         trend_today = _totals_for_date(trend_base_date)
         trend_yesterday = _totals_for_date(yesterday_date)
         trend_day_before = _totals_for_date(day_before_yesterday_date)
+
+        pods_today = trend_today.get("pods")
+        pods_yesterday = trend_yesterday.get("pods")
+        pods_day_before = trend_day_before.get("pods")
+        if not has_any_pods_value and totals.get("total_pods") is not None:
+            pods_today = totals["total_pods"]
+            pods_yesterday = totals["total_pods"]
+            pods_day_before = totals["total_pods"]
 
         def _trend_metric(today_val, yesterday_val, day_before_val):
             def _for_axis(v):
@@ -4135,7 +4321,7 @@ class UploadExcelViewRoche(View):
             "inbound": _trend_metric(trend_today["inbound"], trend_yesterday["inbound"], trend_day_before["inbound"]),
             "outbound": _trend_metric(trend_today["outbound"], trend_yesterday["outbound"], trend_day_before["outbound"]),
             "transportation": _trend_metric(trend_today["transportation"], trend_yesterday["transportation"], trend_day_before["transportation"]),
-            "pods": _trend_metric(totals["total_pods"], totals["total_pods"], totals["total_pods"]),
+            "pods": _trend_metric(pods_today, pods_yesterday, pods_day_before),
         }
 
         html = render_to_string(

@@ -91,7 +91,7 @@ class DashboardDataCache(models.Model):
 class WarehouseAccountOverview(models.Model):
     """
     بيانات تاب Warehouse and Account Overview — مصدرها ملف Da-tamer.xlsx شيت Da-tamer (أو Sheet1).
-    الأعمدة: Warehouse, Account, Capacity, Clearance, Inbound, Outbound, Transportation, Occupied Location.
+    الأعمدة: Warehouse, Account, Capacity, Clearance, Inbound, Outbound, Transportation, PODs, Occupied Location.
     Utilization % = (Occupied Location / Capacity) * 100 (محسوب عند العرض).
     """
     warehouse = models.CharField(max_length=255, db_index=True)
@@ -106,6 +106,8 @@ class WarehouseAccountOverview(models.Model):
     outbound_raw = models.CharField(max_length=255, blank=True, null=True)
     transportation = models.PositiveIntegerField(default=0,  blank=True, null=True)
     transportation_raw = models.CharField(max_length=255, blank=True, null=True)
+    pods = models.PositiveIntegerField(default=0, blank=True, null=True)
+    pods_raw = models.CharField(max_length=255, blank=True, null=True)
     occupied_location = models.PositiveIntegerField(default=0,  blank=True, null=True)
     occupied_location_raw = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now,  blank=True, null=True)  # قابل للتعديل لإضافة/تعديل تاريخ الداتا
