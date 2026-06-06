@@ -4268,11 +4268,13 @@ class UploadExcelViewRoche(View):
                 "trend_util": trend_util,
             })
 
-        # ترند اليوم / أمس / قبل أمس لكل مقياس (نفس فلتر المستودع واليوم المختار) — للـ hover
+        # ترند اليوم / أمس / قبل أمس لكل مقياس (نفس فلتر المستودع والحساب واليوم) — للـ hover
         def _totals_for_date(dt):
             q = WarehouseAccountOverview.objects.all()
             if selected_warehouse:
                 q = q.filter(warehouse=selected_warehouse)
+            if selected_account:
+                q = q.filter(account=selected_account)
             if dt is not None:
                 q = q.filter(created_at__date=dt)
             a = q.aggregate(
@@ -4290,17 +4292,30 @@ class UploadExcelViewRoche(View):
                 "pods": a["total_pods"],
             }
 
+        def _pods_for_date(dt):
+            """مجموع PODs ليوم محدد من قاعدة البيانات (كل يوم استيراد منفصل)."""
+            if dt is None:
+                return None
+            q = WarehouseAccountOverview.objects.filter(created_at__date=dt)
+            if selected_warehouse:
+                q = q.filter(warehouse=selected_warehouse)
+            if selected_account:
+                q = q.filter(account=selected_account)
+            val = q.aggregate(s=Sum("pods"))["s"]
+            if val is not None:
+                return int(val)
+            # اليوم المختار فقط: fallback من الإكسل إن لم تُستورد PODs بعد
+            if sheet_pods and dt == date_filter:
+                return sheet_pods.get("total")
+            return None
+
         trend_today = _totals_for_date(trend_base_date)
         trend_yesterday = _totals_for_date(yesterday_date)
         trend_day_before = _totals_for_date(day_before_yesterday_date)
 
-        pods_today = trend_today.get("pods")
-        pods_yesterday = trend_yesterday.get("pods")
-        pods_day_before = trend_day_before.get("pods")
-        if not has_any_pods_value and totals.get("total_pods") is not None:
-            pods_today = totals["total_pods"]
-            pods_yesterday = totals["total_pods"]
-            pods_day_before = totals["total_pods"]
+        pods_today = _pods_for_date(trend_base_date)
+        pods_yesterday = _pods_for_date(yesterday_date)
+        pods_day_before = _pods_for_date(day_before_yesterday_date)
 
         def _trend_metric(today_val, yesterday_val, day_before_val):
             def _for_axis(v):
